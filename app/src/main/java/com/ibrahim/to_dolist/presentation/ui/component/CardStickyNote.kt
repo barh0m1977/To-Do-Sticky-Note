@@ -19,13 +19,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.filled.Edit
+import com.ibrahim.to_dolist.data.model.ToDoState
+import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import kotlinx.coroutines.delay
 
 @Composable
 fun CardStickyNote(
     modifier: Modifier = Modifier,
     text: String,
-    imageResId: Int,
+    colorArray: ToDoStickyColors,
+    state: ToDoState,
     onDeleteConfirmed: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
@@ -47,21 +51,13 @@ fun CardStickyNote(
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFFFDF5A6),
-                                Color(0xFFFCE97F)
+                               colorArray.listColor[0],
+                                colorArray.listColor[1]
                             )
                         )
                     )
             ) {
-                Image(
-                    painter = painterResource(id = imageResId),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(12.dp))
-                        .alpha(0.2f)
-                )
+
 
                 // Folded corner
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -74,32 +70,53 @@ fun CardStickyNote(
                     }
                     drawPath(
                         path = path,
-                        color = Color(0xFFEAD97C)
+                        color = colorArray.listColor[2]
                     )
                 }
 
-                // Text + Delete button
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+
+                        IconButton(onClick = { showDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        IconButton(onClick = {
+                            // navigation to edit or popup edit
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                     Text(
                         text = text,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = { showDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                    Text(
+                        text = state.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+
+
+
                 }
+
             }
         }
     }

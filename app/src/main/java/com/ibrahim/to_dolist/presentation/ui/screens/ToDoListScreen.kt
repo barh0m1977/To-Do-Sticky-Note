@@ -47,10 +47,12 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                     .height(160.dp)
                     .animateItemPlacement(),
                 text = todo.title,
-                imageResId = drawable.image,
+
                 onDeleteConfirmed = {
                     viewModel.deleteToDoLocal(todo)
-                }
+                },
+                colorArray = todo.cardColor,
+                state = todo.state
             )
         }
     }

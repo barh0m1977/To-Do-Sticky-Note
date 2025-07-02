@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.ibrahim.to_dolist.data.model.ToDo
+import com.ibrahim.to_dolist.data.model.ToDoState
+import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
 import kotlinx.coroutines.delay
 
@@ -101,7 +103,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                         Button(onClick = {
                             if (text.isNotBlank()) {
                                 viewModel.addToDo(
-                                    ToDo(title = text, description = "", isDone = false)
+                                    ToDo(title = text, cardColor = ToDoStickyColors.MINT_CREAM, state = ToDoState.IN_PROGRESS)
                                 )
                             }
                             text = ""
