@@ -45,6 +45,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
+                    .padding(top = 16.dp)
                     .animateItemPlacement(),
                 text = todo.title,
 
@@ -53,6 +54,14 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                 },
                 colorArray = todo.cardColor,
                 state = todo.state
+                , onEditConfirmed = {
+                        updatedToDo ->
+                    viewModel.updateToDo(todo.copy(
+                        title = updatedToDo.title,
+                        cardColor = updatedToDo.cardColor,
+                        state = updatedToDo.state
+                    ))
+                }
             )
         }
     }

@@ -37,6 +37,10 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
         loadTodos()
     }
 
+    fun updateToDo(todo: ToDo) = viewModelScope.launch {
+        dao.update(todo)
+        loadTodos()
+    }
     fun deleteToDo(todo: ToDo) = viewModelScope.launch {
         dao.delete(todo)
         loadTodos()
