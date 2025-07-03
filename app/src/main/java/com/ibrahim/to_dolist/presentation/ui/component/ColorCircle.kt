@@ -21,7 +21,7 @@ fun ColorCircle(
 ) {
     Box(
         modifier = Modifier
-            .size(45.dp)
+            .size(if(isSelected)55.dp else 45.dp)
             .clip(CircleShape)
             .background(color)
             .border(

@@ -82,10 +82,8 @@
 
             ) {
 
-                // 📝 Display ToDo list
                 ToDoListScreen(viewModel)
 
-                // 🗨️ Show Add Dialog
                 if (showDialog) {
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
@@ -135,7 +133,7 @@
                         },
                         confirmButton = {
                             Button(onClick = {
-                                if (text.isNotBlank()) {
+                                if (isLeesThan(text)) {
                                     viewModel.addToDo(
                                         ToDo(
                                             title = text,
@@ -163,5 +161,10 @@
             }
         }
 
+
+    }
+
+    fun isLeesThan(text:String): Boolean{
+        return text.isNotEmpty() && text.isNotBlank()&& text.length<=13
 
     }

@@ -31,6 +31,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
 
     val gridState = rememberLazyGridState()
 
+
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(2),

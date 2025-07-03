@@ -1,3 +1,5 @@
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -31,7 +33,9 @@ import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
 import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
+import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 @Composable
 fun CardStickyNote(
@@ -232,7 +236,7 @@ fun CardStickyNote(
             },
             confirmButton = {
                 Button(onClick = {
-                    if (editTitle.isNotBlank()) {
+                    if (isLeesThan(editTitle)) {
                         onEditConfirmed(
                             ToDo(
                                 title = editTitle,
@@ -240,8 +244,12 @@ fun CardStickyNote(
                                 state = editState
                             )
                         )
+                        showDialogEdit = false
+
+                    }else{
+                        showDialogEdit = true
+
                     }
-                    showDialogEdit = false
                 }) {
                     Text("Update")
                 }

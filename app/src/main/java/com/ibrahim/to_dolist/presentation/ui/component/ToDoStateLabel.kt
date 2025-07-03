@@ -25,19 +25,18 @@ fun ToDoStateLabel(
     isSelected: Boolean = false,
     onClick: (ToDoState) -> Unit
 ) {
-     val backgroundColor = when (state) {
-        ToDoState.PENDING -> Color(0xFFFFF59D)
-        ToDoState.IN_PROGRESS -> Color(0xFF90CAF9)
-        ToDoState.DONE -> Color(0xFFA5D6A7)
-    }
+//     val backgroundColor = when (state) {
+//        ToDoState.PENDING -> Color(0xFFFFF59D)
+//        ToDoState.IN_PROGRESS -> Color(0xFF90CAF9)
+//        ToDoState.DONE -> Color(0xFFA5D6A7)
+//    }
 
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
     val boxSize=(state.name.length+4).dp
     Box(
         modifier = Modifier
-            .background(backgroundColor, RoundedCornerShape(12.dp))
             .clickable { onClick(state) }
-            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(12.dp))
+            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(15.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
