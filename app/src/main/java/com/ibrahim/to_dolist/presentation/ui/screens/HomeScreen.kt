@@ -141,9 +141,9 @@
                                             state = selectedState
                                         )
                                     )
-                                }
-                                text = ""
-                                showDialog = false
+                                    showDialog = false
+                                    text = ""
+                                }else showDialog = true
                             }) {
                                 Text("Add")
                             }

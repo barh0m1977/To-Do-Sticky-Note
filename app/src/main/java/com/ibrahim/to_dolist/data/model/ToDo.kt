@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+
 @Entity(tableName = "todos")
 data class ToDo(
     @PrimaryKey(autoGenerate = true)

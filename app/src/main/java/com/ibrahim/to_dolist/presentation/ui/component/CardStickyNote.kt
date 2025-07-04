@@ -1,5 +1,3 @@
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -7,25 +5,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
@@ -35,7 +26,6 @@ import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
 import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
 import kotlinx.coroutines.delay
-import java.util.Locale
 
 @Composable
 fun CardStickyNote(
@@ -44,7 +34,8 @@ fun CardStickyNote(
     colorArray: ToDoStickyColors,
     state: ToDoState,
     onDeleteConfirmed: () -> Unit,
-    onEditConfirmed: (ToDo) -> Unit
+    onEditConfirmed: (ToDo) -> Unit,
+    onClick: () -> Unit
 ) {
 
     var showDialogDelete by remember { mutableStateOf(false) }
@@ -63,9 +54,10 @@ fun CardStickyNote(
         exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
     ) {
         Card(
-            modifier = modifier,
+            modifier = modifier
+                .clickable { onClick() },
             shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             Box(
                 modifier = Modifier
