@@ -1,5 +1,6 @@
     package com.ibrahim.to_dolist.presentation.ui.screens
 
+    import android.widget.Toast
     import androidx.compose.foundation.layout.Arrangement
     import androidx.compose.foundation.layout.Box
     import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@
     import androidx.compose.runtime.setValue
     import androidx.compose.ui.Modifier
     import androidx.compose.ui.graphics.Color
+    import androidx.compose.ui.platform.LocalContext
     import androidx.compose.ui.unit.dp
     import com.ibrahim.to_dolist.data.model.ToDo
     import com.ibrahim.to_dolist.data.model.ToDoState
@@ -65,6 +67,7 @@
         var colorVal by rememberSaveable  { mutableStateOf(ToDoStickyColors.SUNRISE) }
         var selectedColor by rememberSaveable  { mutableStateOf(ToDoStickyColors.SUNRISE) }
         var selectedState by rememberSaveable  { mutableStateOf(ToDoState.PENDING) }
+        val context = LocalContext.current
 
         Scaffold(
             floatingActionButton = {
@@ -144,7 +147,10 @@
                                     )
                                     showDialog = false
                                     text = ""
-                                }else showDialog = true
+                                }else{
+                                    showDialog = true
+                                    Toast.makeText(context,"should title be short \n lees than 13 characters ",Toast.LENGTH_LONG).show()
+                                }
                             }) {
                                 Text("Add")
                             }

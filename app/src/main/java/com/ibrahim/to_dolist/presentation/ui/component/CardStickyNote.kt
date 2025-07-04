@@ -1,3 +1,4 @@
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ibrahim.to_dolist.data.model.ToDo
@@ -72,6 +74,7 @@ fun CardStickyNote(
     var editTitle by rememberSaveable  { mutableStateOf(text) }
     var editColor by rememberSaveable  { mutableStateOf(colorArray) }
     var editState by rememberSaveable  { mutableStateOf(state) }
+    val context = LocalContext.current
 
     AnimatedVisibility(
         visible = visibleDelete,
@@ -264,6 +267,7 @@ fun CardStickyNote(
 
                     }else{
                         showDialogEdit = true
+                        Toast.makeText(context,"should title be short \n lees than 13 characters ",Toast.LENGTH_LONG).show()
 
                     }
                 }) {
