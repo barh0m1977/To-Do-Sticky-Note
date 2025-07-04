@@ -7,7 +7,10 @@ import com.ibrahim.to_dolist.data.db.ToDoDatabase
 import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoWithTasks
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ToDoViewModel(application: Application) : AndroidViewModel(application) {
@@ -19,6 +22,16 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _todosWithTasks = MutableStateFlow<List<ToDoWithTasks>>(emptyList())
     val todosWithTasks: StateFlow<List<ToDoWithTasks>> = _todosWithTasks.asStateFlow()
+    private val _selectedToDo = MutableStateFlow<ToDo?>(null)
+    val selectedToDo: StateFlow<ToDo?> = _selectedToDo.asStateFlow()
+
+    fun selectToDo(todo: ToDo) {
+        _selectedToDo.value = todo
+    }
+
+    fun clearSelectedToDo() {
+        _selectedToDo.value = null
+    }
 
     init {
         observeTodos()

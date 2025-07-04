@@ -23,6 +23,7 @@
     import androidx.compose.runtime.getValue
     import androidx.compose.runtime.mutableStateOf
     import androidx.compose.runtime.remember
+    import androidx.compose.runtime.saveable.rememberSaveable
     import androidx.compose.runtime.setValue
     import androidx.compose.ui.Modifier
     import androidx.compose.ui.graphics.Color
@@ -59,11 +60,11 @@
 
     @Composable
     fun HomeScreen(viewModel: ToDoViewModel) {
-        var showDialog by remember { mutableStateOf(false) }
-        var text by remember { mutableStateOf("") }
-        var colorVal by remember { mutableStateOf(ToDoStickyColors.SUNRISE) }
-        var selectedColor by remember { mutableStateOf(ToDoStickyColors.SUNRISE) }
-        var selectedState by remember { mutableStateOf(ToDoState.PENDING) }
+        var showDialog by rememberSaveable  { mutableStateOf(false) }
+        var text by rememberSaveable  { mutableStateOf("") }
+        var colorVal by rememberSaveable  { mutableStateOf(ToDoStickyColors.SUNRISE) }
+        var selectedColor by rememberSaveable  { mutableStateOf(ToDoStickyColors.SUNRISE) }
+        var selectedState by rememberSaveable  { mutableStateOf(ToDoState.PENDING) }
 
         Scaffold(
             floatingActionButton = {

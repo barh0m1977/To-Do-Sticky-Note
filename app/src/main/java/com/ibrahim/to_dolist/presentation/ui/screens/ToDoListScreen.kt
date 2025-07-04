@@ -2,39 +2,36 @@ package com.ibrahim.to_dolist.presentation.ui.screens
 
 import CardStickyNote
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.ibrahim.to_dolist.data.model.ToDo
-import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.runtime.collectAsState
-import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
+import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ToDoListScreen(viewModel: ToDoViewModel) {
     val todos by viewModel.todos.collectAsState()
-
-    var selectedToDo by remember { mutableStateOf<ToDo?>(null) }
-    var showTaskDialog by remember { mutableStateOf(false) }
-
+    val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
 
-    // جمع مهام ToDo المحدد مباشرة من Flow مع حالة افتراضية فارغة
-    val subTasks by selectedToDo?.let { viewModel.getTasksFlow(it.id).collectAsState(initial = emptyList()) }
-        ?: remember { mutableStateOf(emptyList()) }
+    val subTasks by selectedToDo?.let {
+        viewModel.getTasksFlow(it.id).collectAsState(initial = emptyList())
+    } ?: remember { mutableStateOf(emptyList()) }
 
     LazyVerticalGrid(
         state = gridState,
@@ -66,29 +63,24 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                     )
                 },
                 onClick = {
-                    selectedToDo = todo
-                    showTaskDialog = true
+                    viewModel.selectToDo(todo)
                 }
             )
         }
     }
 
-    if (showTaskDialog && selectedToDo != null) {
+    selectedToDo?.let { todo ->
         TaskDialog(
-            todoTitle = selectedToDo!!.title,
-            todoId = selectedToDo!!.id,
+            todoTitle = todo.title,
+            todoId = todo.id,
             viewModel = viewModel,
-            onAddSubTask = { newText -> viewModel.addTask(selectedToDo!!.id, newText) },
+            onAddSubTask = { newText -> viewModel.addTask(todo.id, newText) },
             onUpdateSubTask = { updatedTask -> viewModel.updateTask(updatedTask) },
             onDeleteSubTask = { taskToDelete -> viewModel.deleteTask(taskToDelete) },
-            onDismiss = {
-                showTaskDialog = false
-                selectedToDo = null
-            }
+            onDismiss = { viewModel.clearSelectedToDo() } // ✅ يغلق الديالوج
         )
     }
 }
-
 
 
 
