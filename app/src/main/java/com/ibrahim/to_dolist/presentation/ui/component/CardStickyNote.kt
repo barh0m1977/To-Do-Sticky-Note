@@ -142,7 +142,7 @@ fun CardStickyNote(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit",
-                                tint = MaterialTheme.colorScheme.onSurface
+                                tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }
@@ -150,13 +150,13 @@ fun CardStickyNote(
                     Text(
                         text = "______________________",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.Black,
                         modifier = Modifier.weight(0.5f)
                     )
                     Text(
                         text = text,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.Black,
                         modifier = Modifier.weight(0.5f)
                     )
 

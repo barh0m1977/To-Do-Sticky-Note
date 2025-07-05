@@ -26,6 +26,7 @@
     import androidx.compose.runtime.remember
     import androidx.compose.runtime.saveable.rememberSaveable
     import androidx.compose.runtime.setValue
+    import androidx.compose.ui.Alignment
     import androidx.compose.ui.Modifier
     import androidx.compose.ui.graphics.Color
     import androidx.compose.ui.platform.LocalContext
@@ -109,7 +110,7 @@
                                 Text("Select color:")
                                 Spacer(Modifier.height(2.dp))
 
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp,Alignment.CenterHorizontally)) {
                                     items(ToDoStickyColors.entries.size) { index ->
                                         val color = ToDoStickyColors.entries[index]
                                         ColorCircle(

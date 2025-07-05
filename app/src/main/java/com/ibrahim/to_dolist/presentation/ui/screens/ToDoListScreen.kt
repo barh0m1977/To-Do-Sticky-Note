@@ -14,13 +14,16 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
+import kotlinx.coroutines.flow.flowOf
 
+/*
+    @Author: Ibrahim Lubbad
+ */
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -28,10 +31,12 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
     val todos by viewModel.todos.collectAsState()
     val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
-
-    val subTasks by selectedToDo?.let {
-        viewModel.getTasksFlow(it.id).collectAsState(initial = emptyList())
-    } ?: remember { mutableStateOf(emptyList()) }
+    //The optimization this  prevents any unnecessary or redundant subscription every time selectedToDo changes.
+    val subTasks by remember(selectedToDo?.id) {
+        selectedToDo?.let {
+            viewModel.getTasksFlow(it.id)
+        } ?: flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
 
     LazyVerticalGrid(
         state = gridState,
