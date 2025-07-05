@@ -38,8 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ibrahim.to_dolist.data.model.ToDo
-import com.ibrahim.to_dolist.domain.model.ToDoState
-import com.ibrahim.to_dolist.domain.model.ToDoStickyColors
+import com.ibrahim.to_dolist.data.model.ToDoState
+import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
 import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.util.SortOption
@@ -87,6 +87,11 @@ fun ToDoTopBar(
                         when (selectedSortOption) {
                             SortOption.CREATED_DATE -> "Created"
                             SortOption.MODIFIED_DATE -> "Modified"
+                            SortOption.STATE -> "State"
+                            SortOption.ONLY_DONE -> "Only Done"
+                            SortOption.ONLY_PENDING -> "Only Pending"
+                            SortOption.ONLY_IN_PROGRESS -> "Only In Progress"
+                            SortOption.ALL -> "All"
                         }
                     )
                 }
@@ -96,20 +101,58 @@ fun ToDoTopBar(
                     onDismissRequest = { expanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("By Created Date") },
+                        text = { Text("Sort by Created Date") },
                         onClick = {
                             onSortOptionChanged(SortOption.CREATED_DATE)
                             expanded = false
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("By Modified Date") },
+                        text = { Text("Sort by Modified Date") },
                         onClick = {
                             onSortOptionChanged(SortOption.MODIFIED_DATE)
                             expanded = false
                         }
                     )
+                    DropdownMenuItem(
+                        text = { Text("Sort by State") },
+                        onClick = {
+                            onSortOptionChanged(SortOption.STATE)
+                            expanded = false
+                        }
+                    )
+
+                    // Divider if you want
+                    DropdownMenuItem(
+                        text = { Text("Show Only DONE") },
+                        onClick = {
+                            onSortOptionChanged(SortOption.ONLY_DONE)
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Show Only PENDING") },
+                        onClick = {
+                            onSortOptionChanged(SortOption.ONLY_PENDING)
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Show Only IN_PROGRESS") },
+                        onClick = {
+                            onSortOptionChanged(SortOption.ONLY_IN_PROGRESS)
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Show All") },
+                        onClick = {
+                            onSortOptionChanged(SortOption.ALL)
+                            expanded = false
+                        }
+                    )
                 }
+
             }
         }
     )
