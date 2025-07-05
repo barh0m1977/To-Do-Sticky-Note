@@ -11,7 +11,9 @@ data class ToDo(
     val id: Int = 0,
     val title: String,
     val cardColor: ToDoStickyColors = ToDoStickyColors.SUNRISE,
-    val state: ToDoState = ToDoState.PENDING
+    val state: ToDoState = ToDoState.PENDING,
+    val createdAt: Long = System.currentTimeMillis(),
+    val modifiedAt: Long = System.currentTimeMillis()
 )
 
 enum class ToDoState {

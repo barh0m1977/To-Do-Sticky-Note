@@ -47,7 +47,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(todos.reversed(), key = { it.id }) { todo ->
+        items(todos, key = { it.id }) { todo ->
             CardStickyNote(
                 modifier = Modifier
                     .fillMaxWidth()

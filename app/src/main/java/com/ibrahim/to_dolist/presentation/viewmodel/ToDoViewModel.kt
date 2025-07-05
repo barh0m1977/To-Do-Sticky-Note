@@ -1,6 +1,9 @@
 package com.ibrahim.to_dolist.presentation.viewmodel
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ibrahim.to_dolist.data.db.ToDoDatabase
@@ -25,6 +28,27 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedToDo = MutableStateFlow<ToDo?>(null)
     val selectedToDo: StateFlow<ToDo?> = _selectedToDo.asStateFlow()
 
+    enum class SortOption {
+        CREATED_DATE,
+        MODIFIED_DATE
+    }
+
+    var sortOption by mutableStateOf(SortOption.CREATED_DATE)
+        private set
+
+    fun onSortOptionChanged(option: SortOption) {
+        sortOption = option
+        sortToDos()
+    }
+
+    private fun sortToDos() {
+        _todos.value = when (sortOption) {
+            SortOption.CREATED_DATE -> _todos.value.sortedByDescending { it.createdAt }
+            SortOption.MODIFIED_DATE -> _todos.value.sortedByDescending { it.modifiedAt }
+        }
+    }
+
+
     fun selectToDo(todo: ToDo) {
         _selectedToDo.value = todo
     }
@@ -41,10 +65,15 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             dao.getToDosWithTasks().collect { list ->
                 _todosWithTasks.value = list
-                _todos.value = list.map { it.todo }
+                val todosList = list.map { it.todo }
+                _todos.value = when (sortOption) {
+                    SortOption.CREATED_DATE -> todosList.sortedByDescending { it.createdAt }
+                    SortOption.MODIFIED_DATE -> todosList.sortedByDescending { it.modifiedAt }
+                }
             }
         }
     }
+
 
     fun addToDo(todo: ToDo) = viewModelScope.launch {
         dao.insert(todo)
@@ -52,8 +81,10 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateToDo(todo: ToDo) = viewModelScope.launch {
-        dao.update(todo)
+        val updatedToDo = todo.copy(modifiedAt = System.currentTimeMillis())
+        dao.update(updatedToDo)
     }
+
 
     fun deleteToDo(todo: ToDo) = viewModelScope.launch {
         dao.delete(todo)
