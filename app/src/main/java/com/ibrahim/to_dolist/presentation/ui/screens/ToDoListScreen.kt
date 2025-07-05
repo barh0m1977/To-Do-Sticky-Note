@@ -1,7 +1,10 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
 import CardStickyNote
+import android.widget.Toast
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,19 +14,25 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
-import kotlinx.coroutines.flow.flowOf
-
-/*
-    @Author: Ibrahim Lubbad
- */
+import com.ibrahim.to_dolist.util.BiometricHelper
+import java.util.concurrent.Executor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -31,12 +40,11 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
     val todos by viewModel.todos.collectAsState()
     val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
-    //The optimization this  prevents any unnecessary or redundant subscription every time selectedToDo changes.
-    val subTasks by remember(selectedToDo?.id) {
-        selectedToDo?.let {
-            viewModel.getTasksFlow(it.id)
-        } ?: flowOf(emptyList())
-    }.collectAsState(initial = emptyList())
+    val context = LocalContext.current
+    val activity = context as FragmentActivity
+    val executor: Executor = ContextCompat.getMainExecutor(context)
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var targetToDo by remember { mutableStateOf<ToDo?>(null) }
 
     LazyVerticalGrid(
         state = gridState,
@@ -50,6 +58,32 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
         items(todos, key = { it.id }) { todo ->
             CardStickyNote(
                 modifier = Modifier
+                    .combinedClickable(
+                        onClick = {
+                            if (todo.locked) {
+                                if (activity != null) {
+                                    BiometricHelper(
+                                        activity = activity,
+                                        onSuccess = {
+                                            viewModel.selectToDo(todo)
+                                        },
+                                        onError = { msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        }
+                                    ).authenticate()
+                                } else {
+                                    Toast.makeText(context, "Activity is null", Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+                            } else {
+                                viewModel.selectToDo(todo)
+                            }
+                        },
+                        onLongClick = {
+                            targetToDo = todo
+                            showConfirmDialog = true
+                        }
+                    )
                     .fillMaxWidth()
                     .height(160.dp)
                     .padding(top = 16.dp)
@@ -67,9 +101,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                         )
                     )
                 },
-                onClick = {
-                    viewModel.selectToDo(todo)
-                }
+                onClick = { }
             )
         }
     }
@@ -82,14 +114,88 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
             onAddSubTask = { newText -> viewModel.addTask(todo.id, newText) },
             onUpdateSubTask = { updatedTask -> viewModel.updateTask(updatedTask) },
             onDeleteSubTask = { taskToDelete -> viewModel.deleteTask(taskToDelete) },
-            onDismiss = { viewModel.clearSelectedToDo() } // ✅ يغلق الديالوج
+            onDismiss = { viewModel.clearSelectedToDo() }
+        )
+    }
+
+    if (showConfirmDialog && targetToDo != null) {
+        val isLocking = !targetToDo!!.locked
+        AlertDialog(
+            onDismissRequest = {
+                showConfirmDialog = false
+                targetToDo = null
+            },
+            title = {
+                Text(text = if (isLocking) "Lock this card?" else "Unlock this card?")
+            },
+            text = {
+                Text(
+                    text = if (isLocking)
+                        "Do you want to lock this card with fingerprint?"
+                    else
+                        "Unlock with fingerprint?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    BiometricHelper(
+                        activity = activity,
+                        onSuccess = {
+                            val updated = targetToDo!!.copy(locked = isLocking)
+                            viewModel.updateToDo(updated)
+                            showConfirmDialog = false
+                            targetToDo = null
+                        },
+                        onError = {
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                            showConfirmDialog = false
+                            targetToDo = null
+                        }
+                    ).authenticate()
+                }) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showConfirmDialog = false
+                    targetToDo = null
+                }) {
+                    Text("No")
+                }
+            }
         )
     }
 }
 
+@Composable
+fun FingerPrint(canAuth: Boolean, onAuthSuccess: () -> Unit) {
+    val context = LocalContext.current
+    val activity = context as FragmentActivity
+    val executor: Executor = ContextCompat.getMainExecutor(context)
+    val biometric = remember {
+        BiometricPrompt(
+            activity,
+            executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    Toast.makeText(context,"FingerPrint Matched", Toast.LENGTH_LONG).show()
+                    onAuthSuccess()
+                }
 
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    Toast.makeText(context,"FingerPrint Not Matched ", Toast.LENGTH_LONG).show()
 
+                }
 
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    Toast.makeText(context,"Error $errString", Toast.LENGTH_LONG).show()
 
+                }
+            })
 
-
+    }
+}

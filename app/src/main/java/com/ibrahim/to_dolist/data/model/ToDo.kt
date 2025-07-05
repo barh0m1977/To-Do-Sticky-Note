@@ -13,7 +13,8 @@ data class ToDo(
     val cardColor: ToDoStickyColors = ToDoStickyColors.SUNRISE,
     val state: ToDoState = ToDoState.PENDING,
     val createdAt: Long = System.currentTimeMillis(),
-    val modifiedAt: Long = System.currentTimeMillis()
+    val modifiedAt: Long = System.currentTimeMillis(),
+    val locked: Boolean = false
 )
 enum class ToDoState {
     PENDING,

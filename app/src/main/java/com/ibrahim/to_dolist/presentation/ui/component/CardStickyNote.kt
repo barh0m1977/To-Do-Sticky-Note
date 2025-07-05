@@ -1,3 +1,4 @@
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -5,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,8 +81,7 @@ fun CardStickyNote(
         exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
     ) {
         Card(
-            modifier = modifier
-                .clickable { onClick() },
+            modifier = modifier,
             shape = RoundedCornerShape(8.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {

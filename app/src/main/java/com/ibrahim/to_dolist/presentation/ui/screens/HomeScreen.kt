@@ -1,11 +1,14 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -15,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -166,6 +170,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
     var colorVal by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
     var selectedColor by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
     var selectedState by rememberSaveable { mutableStateOf(ToDoState.PENDING) }
+    var isLocked by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
@@ -182,15 +187,12 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
-
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-
         ) {
-
             ToDoListScreen(viewModel)
 
             if (showDialog) {
@@ -207,18 +209,13 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                 placeholder = {
                                     AnimatedPlaceholder(textFieldValue = text)
                                 }
-
                             )
 
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text("Select color:")
-                            Spacer(Modifier.height(2.dp))
-
+                            Spacer(Modifier.height(8.dp))
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(
-                                    8.dp,
-                                    Alignment.CenterHorizontally
-                                )
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                             ) {
                                 items(ToDoStickyColors.entries.size) { index ->
                                     val color = ToDoStickyColors.entries[index]
@@ -231,9 +228,10 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                     }
                                 }
                             }
-                            Spacer(Modifier.height(2.dp))
+
+                            Spacer(Modifier.height(8.dp))
                             Text("Select State:")
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(8.dp))
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 items(ToDoState.entries.size) { index ->
                                     val state = ToDoState.entries[index]
@@ -243,8 +241,25 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                     ) {
                                         selectedState = it
                                     }
-
                                 }
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            // خيار القفل
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isLocked = !isLocked }
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                Checkbox(
+                                    checked = isLocked,
+                                    onCheckedChange = { isLocked = it }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "Lock this task with fingerprint")
                             }
                         }
                     },
@@ -255,16 +270,16 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                     ToDo(
                                         title = text,
                                         cardColor = colorVal,
-                                        state = selectedState
+                                        state = selectedState,
+                                        locked = isLocked
                                     )
                                 )
                                 showDialog = false
                                 text = ""
                             } else {
-                                showDialog = true
                                 Toast.makeText(
                                     context,
-                                    "should title be short \n lees than 13 characters ",
+                                    "should title be short \n less than 13 characters",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
@@ -276,6 +291,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                         TextButton(onClick = {
                             showDialog = false
                             text = ""
+                            isLocked = false
                         }) {
                             Text("Cancel")
                         }
@@ -284,8 +300,6 @@ fun HomeScreen(viewModel: ToDoViewModel) {
             }
         }
     }
-
-
 }
 
 fun isLeesThan(text: String): Boolean {

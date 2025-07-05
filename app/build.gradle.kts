@@ -60,6 +60,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation( libs.androidx.biometric)
+    implementation (libs.androidx.activity.compose.v170 )   // for LocalActivity
 
     implementation(libs.room.runtime)
     kapt(libs.room.compiler)

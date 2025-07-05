@@ -1,5 +1,7 @@
 [versions]
+activityComposeVersion = "1.7.0"
 agp = "8.10.1"
+biometric = "1.1.0"
 foundation = "<compose_version>"
 kotlin = "2.0.21"
 coreKtx = "1.16.0"
@@ -15,6 +17,8 @@ room = "2.7.2"
 foundationDesktop = "1.7.0"
 
 [libraries]
+androidx-activity-compose-v170 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
