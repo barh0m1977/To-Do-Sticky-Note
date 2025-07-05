@@ -10,6 +10,7 @@ import com.ibrahim.to_dolist.data.db.ToDoDatabase
 import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoWithTasks
+import com.ibrahim.to_dolist.presentation.util.SortOption
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,10 +29,7 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedToDo = MutableStateFlow<ToDo?>(null)
     val selectedToDo: StateFlow<ToDo?> = _selectedToDo.asStateFlow()
 
-    enum class SortOption {
-        CREATED_DATE,
-        MODIFIED_DATE
-    }
+
 
     var sortOption by mutableStateOf(SortOption.CREATED_DATE)
         private set
@@ -60,16 +58,20 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
     init {
         observeTodos()
     }
+    private fun updateModifiedAt(todoId: Int) = viewModelScope.launch {
+        val current = _todos.value.find { it.id == todoId }
+        current?.let {
+            val updated = it.copy(modifiedAt = System.currentTimeMillis())
+            dao.update(updated)
+        }
+    }
 
     private fun observeTodos() {
         viewModelScope.launch {
             dao.getToDosWithTasks().collect { list ->
                 _todosWithTasks.value = list
-                val todosList = list.map { it.todo }
-                _todos.value = when (sortOption) {
-                    SortOption.CREATED_DATE -> todosList.sortedByDescending { it.createdAt }
-                    SortOption.MODIFIED_DATE -> todosList.sortedByDescending { it.modifiedAt }
-                }
+                _todos.value = list.map { it.todo }
+                sortToDos()
             }
         }
     }
@@ -100,14 +102,20 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
     fun addTask(todoId: Int, text: String) = viewModelScope.launch {
         val task = Tasks(todoId = todoId, text = text)
         dao.insertSubTask(task)
+        updateModifiedAt(todoId)
+
     }
 
     fun updateTask(tasks: Tasks) = viewModelScope.launch {
         dao.updateSubTask(tasks)
+        updateModifiedAt(tasks.todoId)
+
     }
 
     fun deleteTask(tasks: Tasks) = viewModelScope.launch {
         dao.deleteSubTask(tasks)
+        updateModifiedAt(tasks.todoId)
+
     }
 
     fun getTasks(todoId: Int): List<Tasks> {
