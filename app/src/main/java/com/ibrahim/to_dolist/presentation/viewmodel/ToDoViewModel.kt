@@ -54,6 +54,7 @@
                 SortOption.CREATED_DATE -> filtered.sortedByDescending { it.createdAt }
                 SortOption.MODIFIED_DATE -> filtered.sortedByDescending { it.modifiedAt }
                 SortOption.STATE -> filtered.sortedBy { it.state.name }
+                SortOption.LOCKED -> filtered.filter { it.locked }
                 else -> filtered
             }
         }

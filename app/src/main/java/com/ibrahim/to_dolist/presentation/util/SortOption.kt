@@ -7,5 +7,5 @@ enum class SortOption {
     ONLY_DONE,
     ONLY_PENDING,
     ONLY_IN_PROGRESS,
-    ALL
+    LOCKED
 }

@@ -2,7 +2,6 @@ package com.ibrahim.to_dolist.presentation.ui.screens
 
 import CardStickyNote
 import android.widget.Toast
-import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,11 +96,13 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                         todo.copy(
                             title = updatedToDo.title,
                             cardColor = updatedToDo.cardColor,
-                            state = updatedToDo.state
+                            state = updatedToDo.state,
+                            locked = updatedToDo.locked
                         )
                     )
                 },
-                onClick = { }
+                onClick = { },
+                isLocked = todo.locked
             )
         }
     }
@@ -168,34 +169,3 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
     }
 }
 
-@Composable
-fun FingerPrint(canAuth: Boolean, onAuthSuccess: () -> Unit) {
-    val context = LocalContext.current
-    val activity = context as FragmentActivity
-    val executor: Executor = ContextCompat.getMainExecutor(context)
-    val biometric = remember {
-        BiometricPrompt(
-            activity,
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    Toast.makeText(context,"FingerPrint Matched", Toast.LENGTH_LONG).show()
-                    onAuthSuccess()
-                }
-
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-                    Toast.makeText(context,"FingerPrint Not Matched ", Toast.LENGTH_LONG).show()
-
-                }
-
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    Toast.makeText(context,"Error $errString", Toast.LENGTH_LONG).show()
-
-                }
-            })
-
-    }
-}

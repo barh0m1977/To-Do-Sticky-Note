@@ -1,11 +1,7 @@
-
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,6 +21,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +42,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
@@ -51,6 +50,7 @@ import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
 import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
 import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
+import com.ibrahim.to_dolist.util.BiometricHelper
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,117 +59,130 @@ fun CardStickyNote(
     text: String,
     colorArray: ToDoStickyColors,
     state: ToDoState,
+    isLocked: Boolean,
     onDeleteConfirmed: () -> Unit,
     onEditConfirmed: (ToDo) -> Unit,
     onClick: () -> Unit
 ) {
 
-    var showDialogDelete by rememberSaveable  { mutableStateOf(false) }
-    var visibleDelete by rememberSaveable  { mutableStateOf(true) }
-    var deleteTriggered by rememberSaveable  { mutableStateOf(false) }
+    var showDialogDelete by rememberSaveable { mutableStateOf(false) }
+    var deleteTriggered by rememberSaveable { mutableStateOf(false) }
+    var showDialogEdit by rememberSaveable { mutableStateOf(false) }
+    var editTitle by rememberSaveable { mutableStateOf(text) }
+    var editColor by rememberSaveable { mutableStateOf(colorArray) }
+    var editState by rememberSaveable { mutableStateOf(state) }
+    var isLockedState by rememberSaveable { mutableStateOf(isLocked) }
 
-    var showDialogEdit by rememberSaveable  { mutableStateOf(false) }
-    var visibleEdit by rememberSaveable  { mutableStateOf(true) }
-    var EditTriggered by rememberSaveable  { mutableStateOf(false) }
-    var editTitle by rememberSaveable  { mutableStateOf(text) }
-    var editColor by rememberSaveable  { mutableStateOf(colorArray) }
-    var editState by rememberSaveable  { mutableStateOf(state) }
     val context = LocalContext.current
+    val activity = context as FragmentActivity
+    LaunchedEffect(isLocked) {
+        isLockedState = isLocked
+    }
+    fun authenticateThenShowDialog(showDialog: () -> Unit) {
+        BiometricHelper(
+            activity = activity,
+            onSuccess = {
+                showDialog()
+            },
+            onError = { msg ->
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+        ).authenticate()
+    }
 
-    AnimatedVisibility(
-        visible = visibleDelete,
-        exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
-        Card(
-            modifier = modifier,
-            shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                colorArray.listColor[0],
-                                colorArray.listColor[1]
-                            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            colorArray.listColor[0],
+                            colorArray.listColor[1]
                         )
                     )
-            ) {
+                )
+        ) {
 
-
-                // Folded corner
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val cornerSize = 40.dp.toPx()
-                    val path = Path().apply {
-                        moveTo(0f, size.height)
-                        lineTo(cornerSize, size.height)
-                        lineTo(0f, size.height - cornerSize)
-                        close()
-                    }
-                    drawPath(
-                        path = path,
-                        color = colorArray.listColor[2]
-                    )
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val cornerSize = 40.dp.toPx()
+                val path = Path().apply {
+                    moveTo(0f, size.height)
+                    lineTo(cornerSize, size.height)
+                    lineTo(0f, size.height - cornerSize)
+                    close()
                 }
+                drawPath(
+                    path = path,
+                    color = colorArray.listColor[2]
+                )
+            }
 
-                Column(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .weight(0.5f),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(0.5f),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.SpaceBetween
-
-                    ) {
-
-                        IconButton(onClick = { showDialogDelete = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                    IconButton(onClick = {
+                        if (isLocked) {
+                            authenticateThenShowDialog { showDialogDelete = true }
+                        } else {
+                            showDialogDelete = true
                         }
-                        IconButton(onClick = {
-                            showDialogEdit = true
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit",
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
-
-                    Text(
-                        text = "______________________",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black,
-                        modifier = Modifier.weight(0.5f)
-                    )
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black,
-                        modifier = Modifier.weight(0.5f)
-                    )
-
-                    Text(
-                        text = state.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 12.sp
-                    )
-
-
+                    IconButton(onClick = {
+                        if (isLocked) {
+                            authenticateThenShowDialog { showDialogEdit = true }
+                        } else {
+                            showDialogEdit = true
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
 
+                Text(
+                    text = "______________________",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    modifier = Modifier.weight(0.5f)
+                )
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    modifier = Modifier.weight(0.5f)
+                )
+
+                Text(
+                    text = state.name.replace("_", " ").lowercase()
+                        .replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 12.sp
+                )
             }
         }
     }
@@ -180,33 +193,27 @@ fun CardStickyNote(
             confirmButton = {
                 TextButton(onClick = {
                     showDialogDelete = false
-                    visibleDelete = false
                     deleteTriggered = true
                 }) {
-                    Text("confirm", color = MaterialTheme.colorScheme.error)
+                    Text("Confirm", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialogDelete = false }) {
-                    Text("cancel")
+                    Text("Cancel")
                 }
             },
-            title = {
-                Text("Are you sure?")
-            },
-            text = {
-                Text("this action cannot be undone")
-            }
+            title = { Text("Are you sure?") },
+            text = { Text("This action cannot be undone") }
         )
     }
 
     if (deleteTriggered) {
         LaunchedEffect(Unit) {
-            delay(300)  // مدة الانيميشن
+            delay(300)
             onDeleteConfirmed()
         }
     }
-
 
     if (showDialogEdit) {
         AlertDialog(
@@ -219,11 +226,8 @@ fun CardStickyNote(
                     TextField(
                         value = editTitle,
                         onValueChange = { editTitle = it },
-                        placeholder = {
-                            AnimatedPlaceholder(textFieldValue = editTitle)
-                        }
+                        placeholder = { AnimatedPlaceholder(textFieldValue = editTitle) }
                     )
-
                     Spacer(Modifier.height(8.dp))
                     Text("Select color:")
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -237,7 +241,6 @@ fun CardStickyNote(
                             }
                         }
                     }
-
                     Spacer(Modifier.height(8.dp))
                     Text("Select State:")
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -250,6 +253,22 @@ fun CardStickyNote(
                             )
                         }
                     }
+                    Spacer(Modifier.height(12.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isLockedState = !isLockedState }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Checkbox(
+                            checked = isLockedState,
+                            onCheckedChange = { isLockedState = it }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Lock this task with fingerprint")
+                    }
                 }
             },
             confirmButton = {
@@ -259,15 +278,17 @@ fun CardStickyNote(
                             ToDo(
                                 title = editTitle,
                                 cardColor = editColor,
-                                state = editState
+                                state = editState,
+                                locked = isLockedState
                             )
                         )
                         showDialogEdit = false
-
-                    }else{
-                        showDialogEdit = true
-                        Toast.makeText(context,"should title be short \n lees than 13 characters ",Toast.LENGTH_LONG).show()
-
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Title should be less than 13 characters",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }) {
                     Text("Update")
@@ -280,5 +301,5 @@ fun CardStickyNote(
             }
         )
     }
-
 }
+

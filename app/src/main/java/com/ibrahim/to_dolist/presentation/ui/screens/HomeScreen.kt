@@ -95,7 +95,7 @@ fun ToDoTopBar(
                             SortOption.ONLY_DONE -> "Only Done"
                             SortOption.ONLY_PENDING -> "Only Pending"
                             SortOption.ONLY_IN_PROGRESS -> "Only In Progress"
-                            SortOption.ALL -> "All"
+                            SortOption.LOCKED -> "Locked"
                         }
                     )
                 }
@@ -126,7 +126,6 @@ fun ToDoTopBar(
                         }
                     )
 
-                    // Divider if you want
                     DropdownMenuItem(
                         text = { Text("Show Only DONE") },
                         onClick = {
@@ -149,9 +148,9 @@ fun ToDoTopBar(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Show All") },
+                        text = { Text("Show Locked") },
                         onClick = {
-                            onSortOptionChanged(SortOption.ALL)
+                            onSortOptionChanged(SortOption.LOCKED)
                             expanded = false
                         }
                     )
@@ -246,7 +245,6 @@ fun HomeScreen(viewModel: ToDoViewModel) {
 
                             Spacer(Modifier.height(12.dp))
 
-                            // خيار القفل
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
