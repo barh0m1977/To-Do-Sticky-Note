@@ -47,14 +47,14 @@
                 SortOption.ONLY_DONE -> allTodos.filter { it.state.name == "DONE" }
                 SortOption.ONLY_PENDING -> allTodos.filter { it.state.name == "PENDING" }
                 SortOption.ONLY_IN_PROGRESS -> allTodos.filter { it.state.name == "IN_PROGRESS" }
+                SortOption.OPENED -> allTodos.filter { !it.locked }
+                SortOption.LOCKED -> allTodos.filter { it.locked }
                 else -> allTodos
             }
 
             _todos.value = when (sortOption) {
                 SortOption.CREATED_DATE -> filtered.sortedByDescending { it.createdAt }
                 SortOption.MODIFIED_DATE -> filtered.sortedByDescending { it.modifiedAt }
-                SortOption.STATE -> filtered.sortedBy { it.state.name }
-                SortOption.LOCKED -> filtered.filter { it.locked }
                 else -> filtered
             }
         }
@@ -63,7 +63,7 @@
 //            _todos.value = when (sortOption) {
 //                SortOption.CREATED_DATE -> _todos.value.sortedByDescending { it.createdAt }
 //                SortOption.MODIFIED_DATE -> _todos.value.sortedByDescending { it.modifiedAt }
-//                SortOption.STATE -> _todos.value.sortedBy { it.state.name }
+//                SortOption.OPENED -> _todos.value.sortedBy { it.state.name }
 //            }
 //        }
 

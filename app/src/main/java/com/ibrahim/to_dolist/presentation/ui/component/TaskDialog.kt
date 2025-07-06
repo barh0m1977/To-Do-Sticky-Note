@@ -27,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,9 +48,11 @@ fun TaskDialog(
     onDismiss: () -> Unit
 ) {
     val subTasks by viewModel.getTasksFlow(todoId).collectAsState(initial = emptyList())
-
     var newTaskText by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+
+    var showDialogDelete by rememberSaveable { mutableStateOf(false) }
+    var subTaskToDelete by remember { mutableStateOf<Tasks?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -89,7 +92,10 @@ fun TaskDialog(
                                 },
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = { onDeleteSubTask(subTask) }) {
+                            IconButton(onClick = {
+                                subTaskToDelete = subTask
+                                showDialogDelete = true
+                            }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Delete"
@@ -146,5 +152,32 @@ fun TaskDialog(
         }
     )
 
+    // Delete confirmation dialog
+    if (showDialogDelete && subTaskToDelete != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDialogDelete = false
+                subTaskToDelete = null
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    subTaskToDelete?.let { onDeleteSubTask(it) }
+                    showDialogDelete = false
+                    subTaskToDelete = null
+                }) {
+                    Text("Confirm", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDialogDelete = false
+                    subTaskToDelete = null
+                }) {
+                    Text("Cancel")
+                }
+            },
+            title = { Text("Are you sure?") },
+            text = { Text("This action cannot be undone.") }
+        )
+    }
 }
-

@@ -169,7 +169,7 @@ fun CardStickyNote(
                     modifier = Modifier.weight(0.5f)
                 )
                 Text(
-                    text = text,
+                    text = text+if (isLocked) "🔒" else "",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black,
                     modifier = Modifier.weight(0.5f)

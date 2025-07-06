@@ -91,10 +91,10 @@ fun ToDoTopBar(
                         when (selectedSortOption) {
                             SortOption.CREATED_DATE -> "Created"
                             SortOption.MODIFIED_DATE -> "Modified"
-                            SortOption.STATE -> "State"
                             SortOption.ONLY_DONE -> "Only Done"
                             SortOption.ONLY_PENDING -> "Only Pending"
                             SortOption.ONLY_IN_PROGRESS -> "Only In Progress"
+                            SortOption.OPENED -> "Opened"
                             SortOption.LOCKED -> "Locked"
                         }
                     )
@@ -118,13 +118,6 @@ fun ToDoTopBar(
                             expanded = false
                         }
                     )
-                    DropdownMenuItem(
-                        text = { Text("Sort by State") },
-                        onClick = {
-                            onSortOptionChanged(SortOption.STATE)
-                            expanded = false
-                        }
-                    )
 
                     DropdownMenuItem(
                         text = { Text("Show Only DONE") },
@@ -144,6 +137,13 @@ fun ToDoTopBar(
                         text = { Text("Show Only IN_PROGRESS") },
                         onClick = {
                             onSortOptionChanged(SortOption.ONLY_IN_PROGRESS)
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Show Opened") },
+                        onClick = {
+                            onSortOptionChanged(SortOption.OPENED)
                             expanded = false
                         }
                     )
