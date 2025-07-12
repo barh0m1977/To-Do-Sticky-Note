@@ -11,6 +11,7 @@
 - Delete tasks with confirmation dialog.
 - Smooth animations for adding and removing tasks.
 - Local data storage using Room database.
+- Fingerprint security to locks Tasks
 
 ---
 
