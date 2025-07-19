@@ -1,12 +1,26 @@
-<div>
-<img 
-  src="https://github.com/user-attachments/assets/76c9bc1a-e020-4a86-b1f0-8c7077c6718b" 
- style="max-width: 100%;
-  height: auto;
-  border-radius: 15px;" 
-  alt="Image" 
-/>
+<div style="
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: #f9f9f9;
+">
+  <img 
+    src="https://github.com/user-attachments/assets/76c9bc1a-e020-4a86-b1f0-8c7077c6718b" 
+    style="
+      width: 300px;
+      height: auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      border: 2px solid #e0e0e0;
+      transition: transform 0.3s ease;
+    " 
+    alt="Nice Styled Image"
+    onmouseover="this.style.transform='scale(1.03)'"
+    onmouseout="this.style.transform='scale(1)'"
+  />
 </div>
+
 # To-Do Sticky Note
 
 **To-Do Sticky Note** is a simple and elegant task management app that uses sticky-note style cards to help you organize your tasks effectively.
