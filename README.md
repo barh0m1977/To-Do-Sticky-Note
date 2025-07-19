@@ -1,8 +1,9 @@
 <div>
 <img 
   src="https://github.com/user-attachments/assets/76c9bc1a-e020-4a86-b1f0-8c7077c6718b" 
-  style="max-width: 100%; height: auto;" 
-  width="300" 
+  style=" display: block;
+  margin: auto;
+  width: 50%;"  
   alt="Image" 
 />
 </div>
