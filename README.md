@@ -21,6 +21,7 @@
 - Jetpack Compose for UI
 - Room Database for local persistence
 - MVVM architecture for clean code structure
+- Hot Flows
 
   ## Screenshots
   <div>
