@@ -22,5 +22,12 @@
 - Room Database for local persistence
 - MVVM architecture for clean code structure
 
+  ## Screenshots
+  
+![1000044811](https://github.com/user-attachments/assets/f7c1335a-2275-4514-91ff-494523d45e2b)
+![1000044810](https://github.com/user-attachments/assets/1ecdd65f-c886-455c-9cae-1d27f2702c00)
+![1000044809](https://github.com/user-attachments/assets/0f917aa9-bafe-4e9f-85f3-628c1c8c74b1)
+![1000044812](https://github.com/user-attachments/assets/74d1b63f-9264-4db4-9ec5-47e1501a62ce)
+
 
 
