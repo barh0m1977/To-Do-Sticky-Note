@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDoState
 
 @Composable
@@ -28,6 +30,13 @@ fun ToDoStateLabel(
 
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
     val boxSize=(state.name.length+4).dp
+    @Composable
+    fun stateTitle(name: String): String{
+        if (name == ToDoState.PENDING.name) return stringResource(R.string.pending)
+        else if (name == ToDoState.IN_PROGRESS.name) return stringResource(R.string.in_progress)
+        else if (name == ToDoState.DONE.name) return stringResource(R.string.done)
+        return ""
+    }
     Box(
         modifier = Modifier
             .clickable { onClick(state) }
@@ -35,7 +44,7 @@ fun ToDoStateLabel(
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
-            text = state.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
+            text = stateTitle(state.name).replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
             fontSize = 14.sp
         )
     }

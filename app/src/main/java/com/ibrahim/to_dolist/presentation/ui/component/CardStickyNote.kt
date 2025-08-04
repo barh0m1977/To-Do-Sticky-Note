@@ -40,9 +40,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
+import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
@@ -143,7 +145,7 @@ fun CardStickyNote(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.delete),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -156,7 +158,7 @@ fun CardStickyNote(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
+                            contentDescription = stringResource(R.string.edit),
                             tint = MaterialTheme.colorScheme.tertiary
                         )
                     }
@@ -195,16 +197,16 @@ fun CardStickyNote(
                     showDialogDelete = false
                     deleteTriggered = true
                 }) {
-                    Text("Confirm", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.confirm), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialogDelete = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
-            title = { Text("Are you sure?") },
-            text = { Text("This action cannot be undone") }
+            title = { Text(stringResource(R.string.are_you_sure)) },
+            text = { Text(stringResource(R.string.this_action_cannot_be_undone)) }
         )
     }
 
@@ -218,10 +220,10 @@ fun CardStickyNote(
     if (showDialogEdit) {
         AlertDialog(
             onDismissRequest = { showDialogEdit = false },
-            title = { Text("Edit Task") },
+            title = { Text(stringResource(R.string.edit_task)) },
             text = {
                 Column {
-                    Text("Edit task title:")
+                    Text(stringResource(R.string.edit_task_title))
                     Spacer(Modifier.height(8.dp))
                     TextField(
                         value = editTitle,
@@ -229,7 +231,7 @@ fun CardStickyNote(
                         placeholder = { AnimatedPlaceholder(textFieldValue = editTitle) }
                     )
                     Spacer(Modifier.height(8.dp))
-                    Text("Select color:")
+                    Text(stringResource(R.string.select_color))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(ToDoStickyColors.entries.size) { index ->
                             val color = ToDoStickyColors.entries[index]
@@ -242,7 +244,7 @@ fun CardStickyNote(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Select State:")
+                    Text(stringResource(R.string.select_state))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(ToDoState.entries.size) { index ->
                             val s = ToDoState.entries[index]
@@ -267,7 +269,7 @@ fun CardStickyNote(
                             onCheckedChange = { isLockedState = it }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Lock this task with fingerprint")
+                        Text(text = stringResource(R.string.lock_this_task_with_fingerprint))
                     }
                 }
             },
@@ -286,17 +288,17 @@ fun CardStickyNote(
                     } else {
                         Toast.makeText(
                             context,
-                            "Title should be less than 13 characters",
+                            context.getString(R.string.should_title_be_short_less_than_13_characters),
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 }) {
-                    Text("Update")
+                    Text(stringResource(R.string.update))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialogEdit = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

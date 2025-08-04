@@ -24,9 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
@@ -127,14 +129,16 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                 targetToDo = null
             },
             title = {
-                Text(text = if (isLocking) "Lock this card?" else "Unlock this card?")
+                Text(text = if (isLocking) stringResource(R.string.lock_this_card) else stringResource(
+                    R.string.unlock_this_card
+                ))
             },
             text = {
                 Text(
                     text = if (isLocking)
-                        "Do you want to lock this card with fingerprint?"
+                        stringResource(R.string.do_you_want_to_lock_this_card_with_fingerprint)
                     else
-                        "Unlock with fingerprint?"
+                        stringResource(R.string.unlock_with_fingerprint)
                 )
             },
             confirmButton = {
@@ -154,7 +158,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                         }
                     ).authenticate()
                 }) {
-                    Text("Yes")
+                    Text(stringResource(R.string.yes))
                 }
             },
             dismissButton = {
@@ -162,7 +166,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                     showConfirmDialog = false
                     targetToDo = null
                 }) {
-                    Text("No")
+                    Text(stringResource(R.string.no))
                 }
             }
         )
