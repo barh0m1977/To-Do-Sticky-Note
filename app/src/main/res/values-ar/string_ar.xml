@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-        <string name="app_name">قائمة المهام</string>
+        <string name="app_name">To-Do List</string>
         <string name="new_task">مهمة جديدة</string>
         <string name="enter_task_title">أدخل عنوان المهمة:</string>
         <string name="select_color">اختر اللون:</string>
@@ -43,6 +43,8 @@
         <string name="edit_task">تعديل المهمة</string>
         <string name="edit_task_title">تعديل عنوان المهمة:</string>
         <string name="update">تحديث</string>
+        <string name="subtasks_for">المهام الفرعية لـ "%1$s"</string>
+        <string name="new_subtask">مهمة فرعية جديدة</string>
 
 
 

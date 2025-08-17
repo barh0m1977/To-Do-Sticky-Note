@@ -42,4 +42,6 @@
     <string name="edit_task">Edit Task</string>
     <string name="edit_task_title">Edit task title:</string>
     <string name="update">Update</string>
+    <string name="subtasks_for">Subtasks for \"%1$s\"</string>
+    <string name="new_subtask">New Subtask</string>
 </resources>

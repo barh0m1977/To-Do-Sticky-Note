@@ -32,8 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
 
@@ -57,7 +59,7 @@ fun TaskDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Subtasks for \"$todoTitle\"")
+            Text(stringResource(R.string.subtasks_for, todoTitle))
         },
         text = {
             Column(
@@ -98,7 +100,7 @@ fun TaskDialog(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete"
+                                    contentDescription = stringResource(R.string.delete)
                                 )
                             }
                         }
@@ -128,7 +130,7 @@ fun TaskDialog(
                 OutlinedTextField(
                     value = newTaskText,
                     onValueChange = { newTaskText = it },
-                    label = { Text("New Subtask") },
+                    label = { Text(stringResource(R.string.new_subtask)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -142,12 +144,12 @@ fun TaskDialog(
                     }
                 }
             ) {
-                Text("Add")
+                Text(stringResource(R.string.add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -165,7 +167,7 @@ fun TaskDialog(
                     showDialogDelete = false
                     subTaskToDelete = null
                 }) {
-                    Text("Confirm", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.confirm), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -173,11 +175,11 @@ fun TaskDialog(
                     showDialogDelete = false
                     subTaskToDelete = null
                 }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
-            title = { Text("Are you sure?") },
-            text = { Text("This action cannot be undone.") }
+            title = { Text(stringResource(R.string.are_you_sure)) },
+            text = { Text(stringResource(R.string.this_action_cannot_be_undone)) }
         )
     }
 }
