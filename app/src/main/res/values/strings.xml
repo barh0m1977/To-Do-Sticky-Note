@@ -44,4 +44,8 @@
     <string name="update">Update</string>
     <string name="subtasks_for">Subtasks for \"%1$s\"</string>
     <string name="new_subtask">New Subtask</string>
+    <string name="no_fingerprints_enrolled">no fingerprints enrolled</string>
+    <string name="no_fingerprint_hardware">no fingerprint hardware</string>
+    <string name="fingerprint_unavailable">fingerprint unavailable</string>
+
 </resources>

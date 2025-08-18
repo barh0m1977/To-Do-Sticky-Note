@@ -1,7 +1,9 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
+import android.os.Build
 import android.widget.Toast
-import androidx.compose.foundation.clickable
+import androidx.annotation.RequiresApi
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,7 +88,6 @@ fun ToDoTopBar(
     onSortDirectionChanged: (SortDirection) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var sortIcon by remember { mutableStateOf(Icons.Default.ArrowDropDown) }
     TopAppBar(
         title = { Text("To-Do List") },
         actions = {
@@ -117,7 +118,6 @@ fun ToDoTopBar(
             }
 
             Box {
-
                 TextButton(onClick = { expanded = true }) {
                     Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort Icon")
                     Spacer(modifier = Modifier.width(4.dp))
@@ -152,7 +152,6 @@ fun ToDoTopBar(
                             expanded = false
                         }
                     )
-
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.show_only_done)) },
                         onClick = {
@@ -189,13 +188,12 @@ fun ToDoTopBar(
                         }
                     )
                 }
-
             }
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun HomeScreen(viewModel: ToDoViewModel) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
@@ -204,6 +202,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
     var selectedColor by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
     var selectedState by rememberSaveable { mutableStateOf(ToDoState.PENDING) }
     var isLocked by rememberSaveable { mutableStateOf(false) }
+    var isChecked by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
@@ -216,9 +215,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                showDialog = true
-            }) {
+            FloatingActionButton(onClick = { showDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
@@ -241,19 +238,14 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                             TextField(
                                 value = text,
                                 onValueChange = { text = it },
-                                placeholder = {
-                                    AnimatedPlaceholder(textFieldValue = text)
-                                }
+                                placeholder = { AnimatedPlaceholder(textFieldValue = text) }
                             )
 
                             Spacer(Modifier.height(8.dp))
                             Text(stringResource(R.string.select_color))
                             Spacer(Modifier.height(8.dp))
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(
-                                    8.dp,
-                                    Alignment.CenterHorizontally
-                                )
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                             ) {
                                 items(ToDoStickyColors.entries.size) { index ->
                                     val color = ToDoStickyColors.entries[index]
@@ -286,14 +278,50 @@ fun HomeScreen(viewModel: ToDoViewModel) {
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { isLocked = !isLocked }
-                                    .padding(vertical = 8.dp)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Checkbox(
-                                    checked = isLocked,
-                                    onCheckedChange = { isLocked = it }
+                                    enabled = true,
+                                    checked = isChecked,
+                                    onCheckedChange = { checked ->
+                                        val biometricManager = BiometricManager.from(context)
+                                        val canAuthenticate = biometricManager.canAuthenticate(
+                                            BiometricManager.Authenticators.BIOMETRIC_STRONG
+                                        )
+                                        when (canAuthenticate) {
+                                            BiometricManager.BIOMETRIC_SUCCESS -> {
+                                                isLocked = checked
+                                                isChecked = checked
+                                            }
+                                            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                                                isLocked = false
+                                                isChecked = false
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.no_fingerprints_enrolled),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
+                                                isLocked = false
+                                                isChecked = false
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.no_fingerprint_hardware),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                            else -> {
+                                                isLocked = false
+                                                isChecked = false
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.fingerprint_unavailable),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
+                                    }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(text = stringResource(R.string.lock_this_task_with_fingerprint))
@@ -313,6 +341,8 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                 )
                                 showDialog = false
                                 text = ""
+                                isChecked = false
+                                isLocked = false
                             } else {
                                 Toast.makeText(
                                     context,
@@ -329,6 +359,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                             showDialog = false
                             text = ""
                             isLocked = false
+                            isChecked = false
                         }) {
                             Text(stringResource(R.string.cancel))
                         }
@@ -341,5 +372,4 @@ fun HomeScreen(viewModel: ToDoViewModel) {
 
 fun isLeesThan(text: String): Boolean {
     return text.isNotEmpty() && text.isNotBlank() && text.length <= 13
-
 }

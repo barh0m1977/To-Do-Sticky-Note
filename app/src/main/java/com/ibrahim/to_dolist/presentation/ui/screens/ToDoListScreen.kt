@@ -80,10 +80,10 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
                                 viewModel.selectToDo(todo)
                             }
                         },
-                        onLongClick = {
-                            targetToDo = todo
-                            showConfirmDialog = true
-                        }
+//                        onLongClick = {
+//                            targetToDo = todo
+//                            showConfirmDialog = true
+//                        }
                     )
                     .fillMaxWidth()
                     .height(160.dp)

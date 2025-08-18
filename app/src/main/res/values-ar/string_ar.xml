@@ -45,6 +45,10 @@
         <string name="update">تحديث</string>
         <string name="subtasks_for">المهام الفرعية لـ "%1$s"</string>
         <string name="new_subtask">مهمة فرعية جديدة</string>
+        <string name="no_fingerprints_enrolled">لا توجد بصمات مسجّلة</string>
+        <string name="no_fingerprint_hardware">الجهاز لا يحتوي على مستشعر بصمة</string>
+        <string name="fingerprint_unavailable">البصمة غير متاحة حالياً</string>
+
 
 
 
