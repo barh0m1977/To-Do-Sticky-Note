@@ -14,7 +14,9 @@ class MainActivity : FragmentActivity () {
     private val viewModel: ToDoViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            enableEdgeToEdge()
+        }
         setContent {
             ToDoListTheme {
                 HomeScreen(viewModel)

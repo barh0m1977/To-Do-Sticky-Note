@@ -1,8 +1,6 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
-import android.os.Build
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -193,7 +191,6 @@ fun ToDoTopBar(
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun HomeScreen(viewModel: ToDoViewModel) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
