@@ -18,6 +18,7 @@ foundationDesktop = "1.7.0"
 firebaseCrashlytics = "19.4.4"
 googleGmsGoogleServices = "4.4.3"
 googleFirebaseCrashlytics = "3.0.4"
+navigationComposeAndroid = "2.9.3"
 
 [libraries]
 androidx-activity-compose-v170 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
@@ -45,6 +46,7 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics", version.ref = "firebaseCrashlytics" }
+androidx-navigation-compose-android = { group = "androidx.navigation", name = "navigation-compose-android", version.ref = "navigationComposeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

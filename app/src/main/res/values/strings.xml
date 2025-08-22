@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">To-Do List</string>
+    <string name="app_name">MindList</string>
     <string name="new_task">New Task</string>
     <string name="enter_task_title">Enter task title:</string>
     <string name="select_color">Select color:</string>
