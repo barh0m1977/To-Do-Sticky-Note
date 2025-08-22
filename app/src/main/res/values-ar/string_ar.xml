@@ -48,6 +48,7 @@
         <string name="no_fingerprints_enrolled">لا توجد بصمات مسجّلة</string>
         <string name="no_fingerprint_hardware">الجهاز لا يحتوي على مستشعر بصمة</string>
         <string name="fingerprint_unavailable">البصمة غير متاحة حالياً</string>
+        <string name="settings">الاعدادات</string>
 
 
 

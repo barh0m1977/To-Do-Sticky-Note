@@ -5,12 +5,14 @@ import androidx.biometric.BiometricManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -26,6 +29,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
@@ -80,6 +85,7 @@ fun AnimatedPlaceholder(textFieldValue: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToDoTopBar(
+    navController: NavController,
     selectedSortOption: SortOption,
     selectedSortDirection: SortDirection,
     onSortOptionChanged: (SortOption) -> Unit,
@@ -87,8 +93,32 @@ fun ToDoTopBar(
 ) {
     var expanded by remember { mutableStateOf(false) }
     TopAppBar(
-        title = { Text("To-Do List") },
+        title = {
+            TextButton(
+                onClick = {
+                    navController.navigate("setting")
+                },
+                contentPadding = PaddingValues(0.dp) // remove extra padding for a clean row
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp) // smaller spacing
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier.size(24.dp) // standard icon size
+                    )
+
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+        },
         actions = {
+            // Sort Direction Button
             if (selectedSortOption == SortOption.CREATED_DATE || selectedSortOption == SortOption.MODIFIED_DATE) {
                 TextButton(onClick = {
                     val newDirection = if (selectedSortDirection == SortDirection.DESCENDING) {
@@ -115,6 +145,7 @@ fun ToDoTopBar(
                 }
             }
 
+            // Sort Option Dropdown
             Box {
                 TextButton(onClick = { expanded = true }) {
                     Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort Icon")
@@ -189,10 +220,11 @@ fun ToDoTopBar(
             }
         }
     )
+
 }
 
 @Composable
-fun HomeScreen(viewModel: ToDoViewModel) {
+fun HomeScreen(viewModel: ToDoViewModel, navController: NavController) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     var text by rememberSaveable { mutableStateOf("") }
     var colorVal by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
@@ -205,6 +237,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
     Scaffold(
         topBar = {
             ToDoTopBar(
+                navController = navController,
                 selectedSortOption = viewModel.sortOption,
                 selectedSortDirection = viewModel.sortDirection,
                 onSortOptionChanged = viewModel::onSortOptionChanged,
@@ -242,7 +275,10 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                             Text(stringResource(R.string.select_color))
                             Spacer(Modifier.height(8.dp))
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                                horizontalArrangement = Arrangement.spacedBy(
+                                    8.dp,
+                                    Alignment.CenterHorizontally
+                                )
                             ) {
                                 items(ToDoStickyColors.entries.size) { index ->
                                     val color = ToDoStickyColors.entries[index]
@@ -290,6 +326,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                                 isLocked = checked
                                                 isChecked = checked
                                             }
+
                                             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
                                                 isLocked = false
                                                 isChecked = false
@@ -299,6 +336,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                                     Toast.LENGTH_LONG
                                                 ).show()
                                             }
+
                                             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
                                                 isLocked = false
                                                 isChecked = false
@@ -308,6 +346,7 @@ fun HomeScreen(viewModel: ToDoViewModel) {
                                                     Toast.LENGTH_LONG
                                                 ).show()
                                             }
+
                                             else -> {
                                                 isLocked = false
                                                 isChecked = false

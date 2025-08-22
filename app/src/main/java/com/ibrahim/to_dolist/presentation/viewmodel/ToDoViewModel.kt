@@ -12,6 +12,7 @@ import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoWithTasks
 import com.ibrahim.to_dolist.presentation.util.SortDirection
 import com.ibrahim.to_dolist.presentation.util.SortOption
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +21,7 @@ import kotlinx.coroutines.launch
 
 class ToDoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val dao = ToDoDatabase.getDatabase(application).toDoDao()
+    private val dao by lazy { ToDoDatabase.getDatabase(application).toDoDao() }
 
     private val _todos = MutableStateFlow<List<ToDo>>(emptyList())
     val todos: StateFlow<List<ToDo>> = _todos.asStateFlow()
@@ -110,24 +111,19 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
-    fun addToDo(todo: ToDo) = viewModelScope.launch {
+    fun addToDo(todo: ToDo) = viewModelScope.launch(Dispatchers.IO) {
         dao.insert(todo)
         // No need to manually reload — Flow auto-updates
     }
 
-    fun updateToDo(todo: ToDo) = viewModelScope.launch {
+    fun updateToDo(todo: ToDo) = viewModelScope.launch(Dispatchers.IO) {
         val updatedToDo = todo.copy(modifiedAt = System.currentTimeMillis())
         dao.update(updatedToDo)
     }
 
-
-    fun deleteToDo(todo: ToDo) = viewModelScope.launch {
-        dao.delete(todo)
-    }
-
     fun deleteToDoLocal(todo: ToDo) {
         _todos.value = _todos.value.filterNot { it.id == todo.id }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             dao.delete(todo)
         }
     }
@@ -149,10 +145,6 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
         dao.deleteSubTask(tasks)
         updateModifiedAt(tasks.todoId)
 
-    }
-
-    fun getTasks(todoId: Int): List<Tasks> {
-        return _todosWithTasks.value.firstOrNull { it.todo.id == todoId }?.tasks ?: emptyList()
     }
 
     fun getTasksFlow(todoId: Int): Flow<List<Tasks>> = dao.getTasksForTodoFlow(todoId)

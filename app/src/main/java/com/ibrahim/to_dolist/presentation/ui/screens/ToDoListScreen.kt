@@ -3,7 +3,7 @@ package com.ibrahim.to_dolist.presentation.ui.screens
 import CardStickyNote
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,9 +13,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,11 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
@@ -59,32 +54,26 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
         items(todos, key = { it.id }) { todo ->
             CardStickyNote(
                 modifier = Modifier
-                    .combinedClickable(
-                        onClick = {
-                            if (todo.locked) {
-                                if (activity != null) {
-                                    BiometricHelper(
-                                        activity = activity,
-                                        onSuccess = {
-                                            viewModel.selectToDo(todo)
-                                        },
-                                        onError = { msg ->
-                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                        }
-                                    ).authenticate()
-                                } else {
-                                    Toast.makeText(context, "Activity is null", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
+                    .clickable {
+                        if (todo.locked) {
+                            if (activity != null) {
+                                BiometricHelper(
+                                    activity = activity,
+                                    onSuccess = {
+                                        viewModel.selectToDo(todo)
+                                    },
+                                    onError = { msg ->
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    }
+                                ).authenticate()
                             } else {
-                                viewModel.selectToDo(todo)
+                                Toast.makeText(context, "Activity is null", Toast.LENGTH_SHORT)
+                                    .show()
                             }
-                        },
-//                        onLongClick = {
-//                            targetToDo = todo
-//                            showConfirmDialog = true
-//                        }
-                    )
+                        } else {
+                            viewModel.selectToDo(todo)
+                        }
+                    }
                     .fillMaxWidth()
                     .height(160.dp)
                     .padding(top = 16.dp)
@@ -121,55 +110,55 @@ fun ToDoListScreen(viewModel: ToDoViewModel) {
         )
     }
 
-    if (showConfirmDialog && targetToDo != null) {
-        val isLocking = !targetToDo!!.locked
-        AlertDialog(
-            onDismissRequest = {
-                showConfirmDialog = false
-                targetToDo = null
-            },
-            title = {
-                Text(text = if (isLocking) stringResource(R.string.lock_this_card) else stringResource(
-                    R.string.unlock_this_card
-                ))
-            },
-            text = {
-                Text(
-                    text = if (isLocking)
-                        stringResource(R.string.do_you_want_to_lock_this_card_with_fingerprint)
-                    else
-                        stringResource(R.string.unlock_with_fingerprint)
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    BiometricHelper(
-                        activity = activity,
-                        onSuccess = {
-                            val updated = targetToDo!!.copy(locked = isLocking)
-                            viewModel.updateToDo(updated)
-                            showConfirmDialog = false
-                            targetToDo = null
-                        },
-                        onError = {
-                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                            showConfirmDialog = false
-                            targetToDo = null
-                        }
-                    ).authenticate()
-                }) {
-                    Text(stringResource(R.string.yes))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showConfirmDialog = false
-                    targetToDo = null
-                }) {
-                    Text(stringResource(R.string.no))
-                }
-            }
-        )
-    }
+//    if (showConfirmDialog && targetToDo != null) {
+//        val isLocking = !targetToDo!!.locked
+//        AlertDialog(
+//            onDismissRequest = {
+//                showConfirmDialog = false
+//                targetToDo = null
+//            },
+//            title = {
+//                Text(text = if (isLocking) stringResource(R.string.lock_this_card) else stringResource(
+//                    R.string.unlock_this_card
+//                ))
+//            },
+//            text = {
+//                Text(
+//                    text = if (isLocking)
+//                        stringResource(R.string.do_you_want_to_lock_this_card_with_fingerprint)
+//                    else
+//                        stringResource(R.string.unlock_with_fingerprint)
+//                )
+//            },
+//            confirmButton = {
+//                TextButton(onClick = {
+//                    BiometricHelper(
+//                        activity = activity,
+//                        onSuccess = {
+//                            val updated = targetToDo!!.copy(locked = isLocking)
+//                            viewModel.updateToDo(updated)
+//                            showConfirmDialog = false
+//                            targetToDo = null
+//                        },
+//                        onError = {
+//                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+//                            showConfirmDialog = false
+//                            targetToDo = null
+//                        }
+//                    ).authenticate()
+//                }) {
+//                    Text(stringResource(R.string.yes))
+//                }
+//            },
+//            dismissButton = {
+//                TextButton(onClick = {
+//                    showConfirmDialog = false
+//                    targetToDo = null
+//                }) {
+//                    Text(stringResource(R.string.no))
+//                }
+//            }
+//        )
+//    }
 }
 

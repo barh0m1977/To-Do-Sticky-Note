@@ -8,8 +8,8 @@
     <string name="should_title_be_short_less_than_13_characters">should title be short \n less than 13 characters</string>
     <string name="add">Add</string>
     <string name="cancel">Cancel</string>
-    <string name="ascending">Ascending</string>
-    <string name="descending">Descending</string>
+    <string name="ascending">Asc</string>
+    <string name="descending">Des</string>
     <string name="created">Created</string>
     <string name="modified">Modified</string>
     <string name="only_done">Only Done</string>
@@ -47,5 +47,6 @@
     <string name="no_fingerprints_enrolled">no fingerprints enrolled</string>
     <string name="no_fingerprint_hardware">no fingerprint hardware</string>
     <string name="fingerprint_unavailable">fingerprint unavailable</string>
+    <string name="settings">Settings</string>
 
 </resources>
