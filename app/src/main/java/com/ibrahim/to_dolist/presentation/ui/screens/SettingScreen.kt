@@ -1,5 +1,6 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.clickable
@@ -15,10 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -26,59 +25,67 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
 import com.ibrahim.to_dolist.R
+import com.ibrahim.to_dolist.presentation.viewmodel.SettingsViewModel
 
 enum class AppTheme { LIGHT, DARK, SYSTEM }
 enum class DialogStyle { NORMAL, CUSTOM }
 enum class AppLanguage { ENGLISH, ARABIC }
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(viewModel : SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
     val context = LocalContext.current
 
-    var language by remember { mutableStateOf(AppLanguage.ENGLISH) }
-    var theme by remember { mutableStateOf(AppTheme.SYSTEM) }
-    var dialogStyle by remember { mutableStateOf(DialogStyle.NORMAL) }
+    // Collect values from ViewModel (StateFlow → Compose state)
+    val language by viewModel.language.collectAsState()
+    val theme by viewModel.theme.collectAsState()
+    val dialogStyle by viewModel.dialogStyle.collectAsState()
 
     val version = getAppVersion(context)
 
-    Scaffold(){
-        it ->
+    Scaffold { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it)
+                .padding(paddingValues)
                 .padding(16.dp)
         ) {
             item {
-                Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    stringResource(R.string.settings),
+                    style = MaterialTheme.typography.headlineMedium
+                )
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
             // Language
             item {
-                SettingItem(title = "Language", subtitle = language.name) {
-                    language = if (language == AppLanguage.ENGLISH) AppLanguage.ARABIC else AppLanguage.ENGLISH
+                SettingItem(title = "Language", subtitle = language) {
+                    val newLang = if (language == "en") "ar" else "en"
+                    viewModel.updateLanguage(newLang)
+                    val activity = context as? Activity
+                    activity?.recreate()
                 }
             }
 
             // Theme
             item {
-                SettingItem(title = "Theme", subtitle = theme.name) {
-                    theme = when (theme) {
-                        AppTheme.LIGHT -> AppTheme.DARK
-                        AppTheme.DARK -> AppTheme.SYSTEM
-                        AppTheme.SYSTEM -> AppTheme.LIGHT
+                SettingItem(title = "Theme", subtitle = theme) {
+                    val newTheme = when (theme) {
+                        "light" -> "dark"
+                        "dark" -> "system"
+                        else -> "light"
                     }
+                    viewModel.updateTheme(newTheme)
+                    val activity = context as? Activity
+                    activity?.recreate()
                 }
             }
 
             // Dialog style
             item {
-                SettingItem(title = "Dialog Style", subtitle = dialogStyle.name) {
-                    dialogStyle = when (dialogStyle) {
-                        DialogStyle.NORMAL -> DialogStyle.CUSTOM
-                        DialogStyle.CUSTOM -> DialogStyle.NORMAL
-                    }
+                SettingItem(title = "Dialog Style", subtitle = dialogStyle) {
+                    val newStyle = if (dialogStyle == "normal") "custom" else "normal"
+                    viewModel.updateDialogStyle(newStyle)
                 }
             }
 
@@ -102,7 +109,6 @@ fun SettingsScreen() {
             }
         }
     }
-
 }
 
 @Composable
