@@ -12,6 +12,7 @@ import androidx.fragment.app.FragmentActivity
 import com.google.android.gms.ads.MobileAds
 import com.ibrahim.to_dolist.core.utility.LocaleHelper
 import com.ibrahim.to_dolist.navigation.AppNavGraph
+import com.ibrahim.to_dolist.presentation.viewmodel.SettingsViewModel
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity () {
     private val viewModel: ToDoViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
@@ -37,7 +39,7 @@ class MainActivity : FragmentActivity () {
         setContent {
             CompositionLocalProvider(LocalLayoutDirection provides if (language == "ar") LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 ToDoListTheme(theme) {
-                    AppNavGraph(viewModel)
+                    AppNavGraph(viewModel,settingsViewModel)
                 }
             }
         }

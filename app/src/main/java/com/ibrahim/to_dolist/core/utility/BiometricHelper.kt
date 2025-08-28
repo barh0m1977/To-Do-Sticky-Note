@@ -1,4 +1,4 @@
-package com.ibrahim.to_dolist.util
+package com.ibrahim.to_dolist.core.utility
 
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat

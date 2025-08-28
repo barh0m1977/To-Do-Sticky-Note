@@ -57,5 +57,6 @@
     <string name="send_feedback">Send Feedback</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="app_version">App Version</string>
+    <string name="presentation">presentation</string>
 
 </resources>

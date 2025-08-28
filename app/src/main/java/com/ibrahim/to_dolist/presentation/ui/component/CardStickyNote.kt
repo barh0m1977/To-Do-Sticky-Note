@@ -1,3 +1,5 @@
+package com.ibrahim.to_dolist.presentation.ui.component
+
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -52,7 +54,7 @@ import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
 import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
 import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
-import com.ibrahim.to_dolist.util.BiometricHelper
+import com.ibrahim.to_dolist.core.utility.BiometricHelper
 import kotlinx.coroutines.delay
 
 @Composable

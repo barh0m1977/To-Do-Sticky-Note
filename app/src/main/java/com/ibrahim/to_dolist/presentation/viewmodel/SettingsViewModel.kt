@@ -16,8 +16,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _theme = MutableStateFlow(settingsManager.getTheme())
     val theme: StateFlow<String> = _theme
 
-    private val _dialogStyle = MutableStateFlow(settingsManager.getDialogStyle())
-    val dialogStyle: StateFlow<String> = _dialogStyle
+    private val _displayStyle = MutableStateFlow(settingsManager.getDisplayStyle())
+    val displayStyle: StateFlow<String> = _displayStyle
 
     fun updateLanguage(lang: String) {
         settingsManager.setLanguage(lang)
@@ -30,8 +30,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _theme.value = theme
     }
 
-    fun updateDialogStyle(style: String) {
-        settingsManager.setDialogStyle(style)
-        _dialogStyle.value = style
+    fun updateDisplayStyle(style: String) {
+        settingsManager.setDisplayStyle(style)
+        _displayStyle.value = style
     }
 }

@@ -38,7 +38,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -63,6 +65,7 @@ import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.component.rememberInterstitialAd
 import com.ibrahim.to_dolist.presentation.util.SortDirection
 import com.ibrahim.to_dolist.presentation.util.SortOption
+import com.ibrahim.to_dolist.presentation.viewmodel.SettingsViewModel
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
 import kotlinx.coroutines.delay
 
@@ -107,17 +110,20 @@ fun ToDoTopBar(
             TextButton(
                 onClick = {
                     if (interstitialAd != null) {
-                        interstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
-                            override fun onAdDismissedFullScreenContent() {
-                                navController.navigate("setting")
+                        interstitialAd?.fullScreenContentCallback =
+                            object : FullScreenContentCallback() {
+                                override fun onAdDismissedFullScreenContent() {
+                                    navController.navigate("setting")
+                                }
+
+                                override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
+                                    navController.navigate("setting")
+                                }
+
+                                override fun onAdShowedFullScreenContent() {
+                                    interstitialAd = null
+                                }
                             }
-                            override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
-                                navController.navigate("setting")
-                            }
-                            override fun onAdShowedFullScreenContent() {
-                                interstitialAd = null
-                            }
-                        }
                         interstitialAd?.show(activity)
                     } else {
                         navController.navigate("setting")
@@ -243,7 +249,11 @@ fun ToDoTopBar(
 }
 
 @Composable
-fun HomeScreen(viewModel: ToDoViewModel, navController: NavController) {
+fun HomeScreen(
+    viewModel: ToDoViewModel,
+    navController: NavController,
+    settingsViewModel: SettingsViewModel
+) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     var text by rememberSaveable { mutableStateOf("") }
     var colorVal by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
@@ -253,7 +263,8 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController) {
     var isChecked by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     var showAd by remember { mutableStateOf(false) }
-
+    //getting display sate
+    val displayType by settingsViewModel.displayStyle.collectAsState()
 
     Scaffold(
         topBar = {
@@ -282,11 +293,17 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController) {
                     .fillMaxWidth()
                     .height(50.dp)
             )
-            ToDoListScreen(
-                viewModel,
-                modifier = Modifier
-            )
-
+            // Dynamic content with key
+            key(displayType) {
+                if (displayType == "display all") {
+                    ToDoListScreen(
+                        viewModel,
+                        modifier = Modifier
+                    )
+                } else {
+                    CalendarWithTaskToDo(viewModel)
+                }
+            }
         }
 
         // New Task Dialog

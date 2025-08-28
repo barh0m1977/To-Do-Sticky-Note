@@ -12,7 +12,7 @@ class SettingsManager(context: Context) {
     companion object {
         private const val KEY_LANGUAGE = "language"
         private const val KEY_THEME = "theme"
-        private const val KEY_DIALOG_STYLE = "dialog_style"
+        private const val KEY_DISPLAY_STYLE = "display_style"
     }
 
     fun setLanguage(language: String) {
@@ -27,9 +27,9 @@ class SettingsManager(context: Context) {
 
     fun getTheme(): String = prefs.getString(KEY_THEME, "light") ?: "light"
 
-    fun setDialogStyle(style: String) {
-        prefs.edit(commit = true) { putString(KEY_DIALOG_STYLE, style) }
+    fun setDisplayStyle(style: String) {
+        prefs.edit(commit = true) { putString(KEY_DISPLAY_STYLE, style) }
     }
 
-    fun getDialogStyle(): String = prefs.getString(KEY_DIALOG_STYLE, "normal") ?: "normal"
+    fun getDisplayStyle(): String = prefs.getString(KEY_DISPLAY_STYLE, "display all") ?: "display all"
 }

@@ -1,6 +1,7 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import androidx.activity.ComponentActivity
@@ -42,18 +43,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.presentation.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),navController: NavController) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = viewModel(
+        factory = SettingsViewModelFactory(LocalContext.current.applicationContext as Application)
+    ), navController: NavController
+) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
     val language by viewModel.language.collectAsState()
     val theme by viewModel.theme.collectAsState()
-    val dialogStyle by viewModel.dialogStyle.collectAsState()
+    val dialogStyle by viewModel.displayStyle.collectAsState()
 
     val version = getAppVersion(context)
 
@@ -109,16 +117,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = androidx.lifecycle.viewmodel.c
             }
 
             // in new version 2.1.1
-//            item {
-//                SettingCard(
-//                    title = "Dialog Style",
-//                    subtitle = dialogStyle.replaceFirstChar { it.uppercase() },
-//                    icon = Icons.Default.Style
-//                ) {
-//                    val newStyle = if (dialogStyle == "normal") "custom" else "normal"
-//                    viewModel.updateDialogStyle(newStyle)
-//                }
-//            }
+            item {
+                SettingCard(
+                    title = stringResource(R.string.presentation),
+                    subtitle = dialogStyle.replaceFirstChar { it.uppercase() },
+                    icon = Icons.Default.Style
+                ) {
+                    val newStyle =
+                        if (dialogStyle == "display all") "display with calendar" else "display all"
+                    viewModel.updateDisplayStyle(newStyle)
+//                    (context as? Activity)?.recreate()
+                }
+            }
 
             item {
                 SettingCard(
@@ -211,5 +221,15 @@ fun getAppVersion(context: Context): String {
         "${pInfo.versionName} (${PackageInfoCompat.getLongVersionCode(pInfo)})"
     } catch (e: Exception) {
         "Unknown"
+    }
+}
+
+class SettingsViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return SettingsViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
