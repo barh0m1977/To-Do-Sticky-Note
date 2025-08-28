@@ -9,10 +9,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.fragment.app.FragmentActivity
+import com.google.android.gms.ads.MobileAds
 import com.ibrahim.to_dolist.core.utility.LocaleHelper
 import com.ibrahim.to_dolist.navigation.AppNavGraph
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class MainActivity : FragmentActivity () {
@@ -21,6 +25,10 @@ class MainActivity : FragmentActivity () {
         super.onCreate(savedInstanceState)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             enableEdgeToEdge()
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            // Initialize the Google Mobile Ads SDK on a background thread.
+            MobileAds.initialize(this@MainActivity) {}
         }
         // Read language from SharedPreferences
         val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)

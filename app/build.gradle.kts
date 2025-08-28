@@ -15,8 +15,8 @@ android {
         applicationId = "com.ibrahim.to_dolist"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "2.0.0"
+        versionCode = 7
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -29,7 +29,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            isDebuggable =false
+            isDebuggable = false
 
         }
         getByName("debug") {
@@ -61,7 +61,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.room.common.jvm)
     implementation(libs.androidx.room.runtime.android)
-    implementation (libs.androidx.foundation)
+    implementation(libs.androidx.foundation)
     implementation(libs.firebase.crashlytics)
     implementation(libs.androidx.navigation.compose.android)
     testImplementation(libs.junit)
@@ -71,12 +71,16 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation( libs.androidx.biometric)
-    implementation (libs.androidx.activity.compose.v170 )   // for LocalActivity
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.activity.compose.v170)   // for LocalActivity
 
     implementation(libs.room.runtime)
     kapt(libs.room.compiler)
     implementation(libs.room.ktx)
-    implementation (libs.androidx.material.icons.extended)
+    implementation(libs.androidx.material.icons.extended)
+    //admob ads
+    implementation(libs.play.services.ads)
+
+
 
 }
