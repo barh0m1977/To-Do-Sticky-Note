@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,14 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.ibrahim.to_dolist.R
+import com.ibrahim.to_dolist.core.utility.BiometricHelper
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
-import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
-import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
 import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
-import com.ibrahim.to_dolist.core.utility.BiometricHelper
 import kotlinx.coroutines.delay
 
 @Composable
@@ -166,14 +165,9 @@ fun CardStickyNote(
                     }
                 }
 
+                HorizontalDivider(color = Color.Black)
                 Text(
-                    text = "______________________",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
-                    modifier = Modifier.weight(0.5f)
-                )
-                Text(
-                    text = text+if (isLocked) "🔒" else "",
+                    text = text + if (isLocked) "🔒" else "",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black,
                     modifier = Modifier.weight(0.5f)

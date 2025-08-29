@@ -13,6 +13,7 @@ data class ToDo(
     val cardColor: ToDoStickyColors = ToDoStickyColors.SUNRISE,
     val state: ToDoState = ToDoState.PENDING,
     val createdAt: Long = System.currentTimeMillis(),
+    val durationMinutes: Int = 60,
     val modifiedAt: Long = System.currentTimeMillis(),
     val locked: Boolean = false
 )

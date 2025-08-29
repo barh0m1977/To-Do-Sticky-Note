@@ -3,6 +3,7 @@ package com.ibrahim.to_dolist.presentation.ui.screens
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,14 +13,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Expand
+import androidx.compose.material.icons.filled.Upcoming
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,24 +41,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.ibrahim.to_dolist.core.utility.BiometricHelper
-import com.ibrahim.to_dolist.core.utility.toLocalDate
+import com.ibrahim.to_dolist.core.utility.toLocalDateTime
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.presentation.ui.component.CardStickyNote
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
+import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
 import java.time.YearMonth
-import java.util.concurrent.Executor
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarWithTaskToDo(viewModel: ToDoViewModel) {
+fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
     val today = LocalDate.now()
     val yearMonth = YearMonth.now()
     val firstDay = yearMonth.atDay(1)
@@ -59,36 +67,84 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel) {
     val firstDayIndex = (firstDay.dayOfWeek.value % 7) // Sunday = 0
     val todosModel = viewModel.todos.collectAsState(initial = emptyList())
     val todos = todosModel.value
+
     // Use epoch day to store LocalDate safely in Compose state
     var selectedDateEpoch by remember { mutableStateOf(today.toEpochDay()) }
     val selectedDate = LocalDate.ofEpochDay(selectedDateEpoch)
+
     // state to show a dialog
     var showDialog by remember { mutableStateOf(false) }
     var selectedTodo by remember { mutableStateOf<ToDo?>(null) }
     val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
+    rememberLazyGridState()
+
     val context = LocalContext.current
-    val activity = context as FragmentActivity
-    val executor: Executor = ContextCompat.getMainExecutor(context)
-    var showConfirmDialog by remember { mutableStateOf(false) }
-    var targetToDo by remember { mutableStateOf<ToDo?>(null) }
+    ContextCompat.getMainExecutor(context)
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val columns = if (screenWidth < 600.dp) 2 else 4
+    if (screenWidth < 600.dp) 2 else 4
+    val sizeOfBox = 50
+    // timeline
+    var timeline by remember { mutableStateOf(false) }
+
+    // ✅ Helper: check if a task overlaps a given day
+    fun ToDo.overlapsDay(day: LocalDate): Boolean {
+        val start = this.createdAt.toLocalDateTime()
+        val duration = this.durationMinutes ?: 60
+        val end = start.plusMinutes(duration.toLong())
+
+        val dayStart = day.atStartOfDay()
+        val dayEnd = dayStart.plusDays(1)
+
+        return start.isBefore(dayEnd) && end.isAfter(dayStart)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
 
-        // Month title
-        Text(
-            text = "${yearMonth.month.name} ${yearMonth.year}",
-            fontSize = 20.sp,
-            color = MaterialTheme.colorScheme.inversePrimary,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Month title
+            Text(
+                text = "${yearMonth.month.name} ${yearMonth.year}",
+                fontSize = 20.sp,
+                color = MaterialTheme.colorScheme.inversePrimary,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                IconButton(onClick = {
+                    //ToDo(call Export function by dialog)
+                }) {
+                    Icon(
+                        Icons.Default.Upcoming,
+                        "Export as",
+                        modifier = Modifier.padding(horizontal = 5.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                IconButton(onClick = {
+                    timeline = !timeline
+                }) {
+                    Icon(
+                        Icons.Default.Expand,
+                        "time line",
+                        modifier = Modifier.padding(horizontal = 5.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
 
         // Days of week header
         val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -97,7 +153,7 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel) {
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             daysOfWeek.forEach {
-                Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(sizeOfBox.dp), textAlign = TextAlign.Center)
             }
         }
 
@@ -112,30 +168,35 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel) {
             ) {
                 for (dayOfWeek in 0..6) {
                     if (week == 0 && dayOfWeek < firstDayIndex || dayCounter > daysInMonth) {
-                        Box(modifier = Modifier.size(40.dp)) {} // empty cell
+                        Box(modifier = Modifier.size(sizeOfBox.dp)) {} // empty cell
                     } else {
                         val date = yearMonth.atDay(dayCounter)
-                        val todosForDay = todos.filter { it.createdAt.toLocalDate() == date }
+                        val todosForDay = todos.filter { it.overlapsDay(date) } // ✅ updated
 
                         val backgroundColor by animateColorAsState(
-                            if (date.toEpochDay() == selectedDateEpoch) Color(0xFF1E90FF)
-                            else if (date == today) Color(0xFFFF6B6B)
-                            else Color.White
+                            if (date.toEpochDay() == selectedDateEpoch) MaterialTheme.colorScheme.primary
+                            else if (date == today) MaterialTheme.colorScheme.errorContainer
+                            else MaterialTheme.colorScheme.background
                         )
 
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(sizeOfBox.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(backgroundColor)
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
                                 .clickable { selectedDateEpoch = date.toEpochDay() }
                         ) {
                             Text(
                                 text = dayCounter.toString(),
                                 fontSize = 14.sp,
-                                color = if (date.toEpochDay() == selectedDateEpoch || date == today) Color.White else Color.Black
+                                color = if (date.toEpochDay() == selectedDateEpoch || date == today) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.primary
                             )
 
                             // small dots for tasks (max 3)
@@ -170,86 +231,19 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Bottom panel: tasks for selected date
-        val tasks = todos.filter { it.createdAt.toLocalDate() == selectedDate }
+        val tasks = todos.filter { it.overlapsDay(selectedDate) } // ✅ updated
+
         if (tasks.isNotEmpty()) {
             Text(
                 text = "Tasks for ${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year}",
                 fontSize = 16.sp,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-
-            LazyVerticalGrid(
-                state = gridState,
-                columns = GridCells.Fixed(columns),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-
-            ) {
-                items(tasks, key = { it.id }) { todo ->
-                    CardStickyNote(
-                        modifier = Modifier
-                            .clickable {
-                                if (todo.locked) {
-                                    if (activity != null) {
-                                        BiometricHelper(
-                                            activity = activity,
-                                            onSuccess = {
-                                                viewModel.selectToDo(todo)
-                                            },
-                                            onError = { msg ->
-                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT)
-                                                    .show()
-                                            }
-                                        ).authenticate()
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Activity is null",
-                                            Toast.LENGTH_SHORT
-                                        )
-                                            .show()
-                                    }
-                                } else {
-                                    viewModel.selectToDo(todo)
-                                }
-                            }
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .padding(top = 16.dp),
-                        text = todo.title,
-                        colorArray = todo.cardColor,
-                        state = todo.state,
-                        onDeleteConfirmed = { viewModel.deleteToDoLocal(todo) },
-                        onEditConfirmed = { updatedToDo ->
-                            viewModel.updateToDo(
-                                todo.copy(
-                                    title = updatedToDo.title,
-                                    cardColor = updatedToDo.cardColor,
-                                    state = updatedToDo.state,
-                                    locked = updatedToDo.locked
-                                )
-                            )
-                        },
-                        onClick = { },
-                        isLocked = todo.locked
-                    )
-                }
-            }
-
-            selectedToDo?.let { todo ->
-                TaskDialog(
-                    todoTitle = todo.title,
-                    todoId = todo.id,
-                    viewModel = viewModel,
-                    onAddSubTask = { newText -> viewModel.addTask(todo.id, newText) },
-                    onUpdateSubTask = { updatedTask -> viewModel.updateTask(updatedTask) },
-                    onDeleteSubTask = { taskToDelete -> viewModel.deleteTask(taskToDelete) },
-                    onDismiss = { viewModel.clearSelectedToDo() }
-                )
+            if (timeline) {
+                TaskTimeline(tasks = tasks)
+            } else {
+                ToDoListScreenForDay(tasks = tasks, viewModel)
             }
         } else {
             Text(
@@ -258,20 +252,122 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel) {
                 color = Color.Gray
             )
         }
-
     }
-//    if (showDialog && selectedTodo != null) {
-//        TaskDialog(
-//            todoTitle = selectedTodo!!.title,
-//            todoId = selectedTodo!!.id,
-//            viewModel = viewModel,
-//            onAddSubTask = { newText -> viewModel.addTask(selectedTodo!!.id, newText) },
-//            onUpdateSubTask = { updatedTask -> viewModel.updateTask(updatedTask) },
-//            onDeleteSubTask = { taskToDelete -> viewModel.deleteTask(taskToDelete) },
-//            onDismiss = {
-//                viewModel.clearSelectedToDo()
-//                showDialog = false
-//            }
-//        )
-//    }
+}
+
+@Composable
+fun TaskTimeline(tasks: List<ToDo>) {
+    val timelineStartHour = 0
+    val timelineEndHour = 23
+    val hours = (timelineStartHour..timelineEndHour).toList()
+    val hourHeightDp = 60.dp
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(hours) { hour ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(hourHeightDp)
+                    .border(0.5.dp, Color.LightGray)
+            ) {
+                // Hour label
+                Text(
+                    text = String.format("%02d:00", hour),
+                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp),
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+
+                // Tasks for this hour
+                tasks.filter {
+                    val t = it.createdAt.toLocalDateTime()
+                    t.hour == hour
+                }.forEach { task ->
+                    val taskStart = task.createdAt.toLocalDateTime()
+                    val taskDuration = task.durationMinutes ?: 60
+                    taskStart.plusMinutes(taskDuration.toLong())
+
+                    val startOffset = (taskStart.minute + taskStart.second / 60f) / 60f * hourHeightDp.value
+                    val durationHeight = (taskDuration / 60f) * hourHeightDp.value
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(durationHeight.dp)
+                            .offset(x = 60.dp, y = startOffset.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(task.cardColor.listColor[2])
+                    ) {
+                        Text(
+                            text = task.title,
+                            color = Color.White,
+                            modifier = Modifier.padding(4.dp),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ToDoListScreenForDay(tasks: List<ToDo>, viewModel: ToDoViewModel) {
+    val context = LocalContext.current
+    val activity = context as FragmentActivity
+    val selectedToDo by viewModel.selectedToDo.collectAsState()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(tasks, key = { it.id }) { todo ->
+            CardStickyNote(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .padding(top = 16.dp)
+                    .clickable {
+                        if (todo.locked) {
+                            BiometricHelper(
+                                activity = context as FragmentActivity,
+                                onSuccess = { viewModel.selectToDo(todo) },
+                                onError = { msg ->
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            ).authenticate()
+                        } else {
+                            viewModel.selectToDo(todo)
+                        }
+                    },
+                text = todo.title,
+                colorArray = todo.cardColor,
+                state = todo.state,
+                onDeleteConfirmed = { viewModel.deleteToDoLocal(todo) },
+                onEditConfirmed = { updatedToDo ->
+                    viewModel.updateToDo(
+                        todo.copy(
+                            title = updatedToDo.title,
+                            cardColor = updatedToDo.cardColor,
+                            state = updatedToDo.state,
+                            locked = updatedToDo.locked
+                        )
+                    )
+                },
+                onClick = { },
+                isLocked = todo.locked
+            )
+        }
+    }
+    selectedToDo?.let { todo ->
+        TaskDialog(
+            todoTitle = todo.title,
+            todoId = todo.id,
+            viewModel = viewModel,
+            onAddSubTask = { newText -> viewModel.addTask(todo.id, newText) },
+            onUpdateSubTask = { updatedTask -> viewModel.updateTask(updatedTask) },
+            onDeleteSubTask = { taskToDelete -> viewModel.deleteTask(taskToDelete) },
+            onDismiss = { viewModel.clearSelectedToDo() }
+        )
+    }
 }

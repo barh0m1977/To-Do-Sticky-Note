@@ -58,5 +58,6 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="app_version">App Version</string>
     <string name="presentation">presentation</string>
+    <string name="select_start_end_time">select time</string>
 
 </resources>
