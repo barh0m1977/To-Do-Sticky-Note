@@ -1,15 +1,11 @@
 package com.ibrahim.to_dolist.presentation.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import com.ibrahim.to_dolist.data.SettingsManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val settingsManager = SettingsManager(application)
-
+class SettingsViewModel(private val settingsManager: SettingsManager):ViewModel() {
     private val _language = MutableStateFlow(settingsManager.getLanguage())
     val language: StateFlow<String> = _language
 

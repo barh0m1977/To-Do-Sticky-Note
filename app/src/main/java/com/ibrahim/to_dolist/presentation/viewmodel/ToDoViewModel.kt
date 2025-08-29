@@ -1,12 +1,11 @@
 package com.ibrahim.to_dolist.presentation.viewmodel
 
-import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ibrahim.to_dolist.data.db.ToDoDatabase
+import com.ibrahim.to_dolist.data.dao.ToDoDao
 import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoWithTasks
@@ -19,9 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ToDoViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val dao by lazy { ToDoDatabase.getDatabase(application).toDoDao() }
+class ToDoViewModel(private val dao : ToDoDao) :ViewModel() {
 
     private val _todos = MutableStateFlow<List<ToDo>>(emptyList())
     val todos: StateFlow<List<ToDo>> = _todos.asStateFlow()

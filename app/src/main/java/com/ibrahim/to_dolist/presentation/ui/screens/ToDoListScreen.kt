@@ -1,5 +1,6 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -15,33 +16,26 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.ibrahim.to_dolist.core.utility.BiometricHelper
-import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.presentation.ui.component.CardStickyNote
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
-import java.util.concurrent.Executor
+import org.koin.androidx.compose.koinViewModel
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier) {
+fun ToDoListScreen(viewModel: ToDoViewModel =koinViewModel()) {
     val todos by viewModel.todos.collectAsState()
     val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
     val context = LocalContext.current
     val activity = context as FragmentActivity
-    val executor: Executor = ContextCompat.getMainExecutor(context)
-    var showConfirmDialog by remember { mutableStateOf(false) }
-    var targetToDo by remember { mutableStateOf<ToDo?>(null) }
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val columns = if (screenWidth < 600.dp) 2 else 4
@@ -81,8 +75,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier) {
                     }
                     .fillMaxWidth()
                     .height(160.dp)
-                    .padding(top = 16.dp)
-                    .animateItemPlacement(),
+                    .padding(top = 16.dp),
                 text = todo.title,
                 colorArray = todo.cardColor,
                 state = todo.state,

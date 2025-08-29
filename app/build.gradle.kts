@@ -80,7 +80,9 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     //admob ads
     implementation(libs.play.services.ads)
-
-
+    // koin injection
+    implementation(libs.koin.android)
+    implementation(libs.koin.core)
+    implementation(libs.koin.androidx.compose)
 
 }

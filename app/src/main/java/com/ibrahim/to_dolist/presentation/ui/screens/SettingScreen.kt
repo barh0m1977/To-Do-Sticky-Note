@@ -1,7 +1,6 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import androidx.activity.ComponentActivity
@@ -43,19 +42,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.presentation.viewmodel.SettingsViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(LocalContext.current.applicationContext as Application)
-    ), navController: NavController
+    viewModel: SettingsViewModel = koinViewModel(),
+    navController: NavController
 ) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
@@ -224,12 +220,3 @@ fun getAppVersion(context: Context): String {
     }
 }
 
-class SettingsViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}

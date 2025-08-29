@@ -296,10 +296,7 @@ fun HomeScreen(
             // Dynamic content with key
             key(displayType) {
                 if (displayType == "display all") {
-                    ToDoListScreen(
-                        viewModel,
-                        modifier = Modifier
-                    )
+                    ToDoListScreen(viewModel)
                 } else {
                     CalendarWithTaskToDo(viewModel)
                 }
