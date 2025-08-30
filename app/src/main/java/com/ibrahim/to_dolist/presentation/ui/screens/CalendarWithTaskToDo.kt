@@ -1,6 +1,8 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Expand
 import androidx.compose.material.icons.filled.Upcoming
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,10 +47,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.ibrahim.to_dolist.core.utility.BiometricHelper
+import com.ibrahim.to_dolist.core.utility.exportAsIcsWithTasks
+import com.ibrahim.to_dolist.core.utility.exportDatabase
 import com.ibrahim.to_dolist.core.utility.toLocalDateTime
+import com.ibrahim.to_dolist.data.db.ToDoDatabase
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.presentation.ui.component.CardStickyNote
@@ -57,6 +62,7 @@ import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
 import java.time.YearMonth
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
@@ -80,13 +86,15 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
     rememberLazyGridState()
 
     val context = LocalContext.current
-    ContextCompat.getMainExecutor(context)
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     if (screenWidth < 600.dp) 2 else 4
     val sizeOfBox = 50
     // timeline
     var timeline by remember { mutableStateOf(false) }
+    // export
+    var showExportDialog by remember { mutableStateOf(false) }
+
 
     // ✅ Helper: check if a task overlaps a given day
     fun ToDo.overlapsDay(day: LocalDate): Boolean {
@@ -124,7 +132,7 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
                 horizontalArrangement = Arrangement.End,
             ) {
                 IconButton(onClick = {
-                    //ToDo(call Export function by dialog)
+                  showExportDialog=true
                 }) {
                     Icon(
                         Icons.Default.Upcoming,
@@ -253,6 +261,47 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
             )
         }
     }
+
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            title = { Text("Export Tasks") },
+            text = { Text("Choose a format to export your tasks:") },
+            confirmButton = {
+                Column {
+                    Text(
+                        "Export as Database",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showExportDialog = false
+                                exportDatabase(context, ToDoDatabase.DATABASE_NAME)
+                            }
+                            .padding(8.dp)
+                    )
+                    Text(
+                        "Export as Ics",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showExportDialog = false
+                                exportAsIcsWithTasks(context,viewModel.todosWithTasks.value)
+                            }
+                            .padding(8.dp)
+                    )
+
+                }
+            },
+            dismissButton = {
+                Text(
+                    "Cancel",
+                    modifier = Modifier.clickable { showExportDialog = false }
+                )
+            }
+        )
+    }
+
+
 }
 
 @Composable
@@ -370,4 +419,7 @@ fun ToDoListScreenForDay(tasks: List<ToDo>, viewModel: ToDoViewModel) {
             onDismiss = { viewModel.clearSelectedToDo() }
         )
     }
+
 }
+
+

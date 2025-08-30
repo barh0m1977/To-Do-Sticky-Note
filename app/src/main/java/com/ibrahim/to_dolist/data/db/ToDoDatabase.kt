@@ -17,6 +17,7 @@ abstract class ToDoDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: ToDoDatabase? = null
+        const val DATABASE_NAME = "todo_database"
 
         fun getDatabase(context: Context): ToDoDatabase {
             Log.d("ToDoDatabase", "Creating Room database instance")
@@ -24,7 +25,7 @@ abstract class ToDoDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     ToDoDatabase::class.java,
-                    "todo_database"
+                    DATABASE_NAME
                 )
                     .fallbackToDestructiveMigration()
                     .build()
