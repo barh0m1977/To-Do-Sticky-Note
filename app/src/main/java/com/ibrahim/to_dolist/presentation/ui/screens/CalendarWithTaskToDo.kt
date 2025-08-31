@@ -105,7 +105,9 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
 
     fun LocalDate.weekOfMonth(): Int = ((this.dayOfMonth + firstDayIndex - 1) / 7)
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         // Header: Month navigation + export + expand
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -142,14 +144,29 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
             // Export + Expand week
             Row {
                 IconButton(onClick = { showExportDialog = true }) {
-                    Icon(Icons.Default.Upcoming, "Export", tint = MaterialTheme.colorScheme.tertiary)
+                    Icon(
+                        Icons.Default.Upcoming,
+                        "Export",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
                 }
                 IconButton(onClick = {
                     timeline = !timeline
-                    expandedWeekIndex = if (expandedWeekIndex == null) selectedDate.weekOfMonth() else null
-                    expandedWeekIndex?.let { week -> coroutineScope.launch { lazyColumnState.animateScrollToItem(week) } }
+                    expandedWeekIndex =
+                        if (expandedWeekIndex == null) selectedDate.weekOfMonth() else null
+                    expandedWeekIndex?.let { week ->
+                        coroutineScope.launch {
+                            lazyColumnState.animateScrollToItem(
+                                week
+                            )
+                        }
+                    }
                 }) {
-                    Icon(Icons.Default.Expand, "Expand Week", tint = MaterialTheme.colorScheme.tertiary)
+                    Icon(
+                        Icons.Default.Expand,
+                        "Expand Week",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
                 }
             }
         }
@@ -158,8 +175,10 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
         val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
             daysOfWeek.forEach {
-                Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(sizeOfBox.dp), textAlign = TextAlign.Center)
+                Text(
+                    it, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(sizeOfBox.dp), textAlign = TextAlign.Center
+                )
             }
         }
 
@@ -171,7 +190,9 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
                 if (expandedWeekIndex == null || expandedWeekIndex == week) {
                     val startDayIndex = week * 7 - firstDayIndex + 1
                     LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(7) { dayOfWeek ->
@@ -191,11 +212,19 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
                                         .size(sizeOfBox.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(backgroundColor)
-                                        .border(2.dp, MaterialTheme.colorScheme.tertiary, RoundedCornerShape(8.dp))
+                                        .border(
+                                            2.dp,
+                                            MaterialTheme.colorScheme.tertiary,
+                                            RoundedCornerShape(8.dp)
+                                        )
                                         .clickable {
                                             selectedDateEpoch = date.toEpochDay()
                                             expandedWeekIndex = week
-                                            coroutineScope.launch { lazyColumnState.animateScrollToItem(week) }
+                                            coroutineScope.launch {
+                                                lazyColumnState.animateScrollToItem(
+                                                    week
+                                                )
+                                            }
                                         }
                                 ) {
                                     Text(
@@ -204,7 +233,10 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
                                             MaterialTheme.colorScheme.inversePrimary
                                         else MaterialTheme.colorScheme.primary
                                     )
-                                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         todosForDay.take(3).forEach { todo ->
                                             Box(
                                                 modifier = Modifier
@@ -214,7 +246,10 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
                                                     .background(
                                                         when (todo.state) {
                                                             ToDoState.DONE -> Color(0xFF4CAF50)
-                                                            ToDoState.IN_PROGRESS -> Color(0xFFFFC107)
+                                                            ToDoState.IN_PROGRESS -> Color(
+                                                                0xFFFFC107
+                                                            )
+
                                                             else -> Color.Gray
                                                         }
                                                     )
@@ -232,31 +267,72 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
         // Prev/Next week buttons (collapsed mode)
         if (timeline) {
             Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 IconButton(onClick = {
                     expandedWeekIndex = ((expandedWeekIndex ?: 0) - 1).coerceAtLeast(0)
                     coroutineScope.launch { lazyColumnState.animateScrollToItem(expandedWeekIndex!!) }
-                }) { Icon(Icons.Default.ArrowBackIosNew, "Prev Week", tint = MaterialTheme.colorScheme.tertiary) }
+                }) {
+                    Icon(
+                        Icons.Default.ArrowBackIosNew,
+                        "Prev Week",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
 
                 IconButton(onClick = {
                     expandedWeekIndex = ((expandedWeekIndex ?: 0) + 1).coerceAtMost(totalWeeks - 1)
                     coroutineScope.launch { lazyColumnState.animateScrollToItem(expandedWeekIndex!!) }
-                }) { Icon(Icons.Default.ArrowForwardIos, "Next Week", tint = MaterialTheme.colorScheme.tertiary) }
+                }) {
+                    Icon(
+                        Icons.Default.ArrowForwardIos,
+                        "Next Week",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Bottom panel tasks
-        val tasks = todos.filter { it.overlapsDay(selectedDate) }
-        if (tasks.isNotEmpty()) {
-            Text("Tasks for ${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year}",
-                fontSize = 16.sp, color = MaterialTheme.colorScheme.tertiary, modifier = Modifier.padding(bottom = 8.dp))
-            if (timeline) ScrollableTaskTimeline(tasks)
-            else ToDoListScreenForDay(tasks, viewModel)
+        val tasksForDay = todos.filter { it.overlapsDay(selectedDate) }.toMutableList()
+        if (tasksForDay.isNotEmpty()) {
+            Text(
+                "Tasks for ${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year}",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            if (timeline) {
+                // Use your swipeable card stack
+                TinderCardStack(
+                    cards = tasksForDay,
+                    maxVisible = 3,
+                    viewModel = viewModel,
+                    onSwiped = { todo, direction ->
+
+                        // Optional: you can update your database or show toast
+                        // For demo: just show which card was swiped
+//                        Toast.makeText(
+//                            LocalContext.current,
+//                            "Swiped ${todo.title} ${direction.name}",
+//                            Toast.LENGTH_SHORT
+//                        ).show()
+                    }
+                )
+            } else {
+                ToDoListScreenForDay(tasksForDay, viewModel)
+            }
         } else {
             Text("No tasks for this day", fontSize = 14.sp, color = Color.Gray)
         }
+
+
     }
 
     // Export Dialog
@@ -267,19 +343,33 @@ fun CalendarWithTaskToDo(viewModel: ToDoViewModel = koinViewModel()) {
             text = { Text("Choose a format to export your tasks:") },
             confirmButton = {
                 Column {
-                    Text("Export as Database",
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            showExportDialog = false
-                            exportDatabase(context, ToDoDatabase.DATABASE_NAME)
-                        }.padding(8.dp))
-                    Text("Export as Ics",
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            showExportDialog = false
-                            exportAsIcsWithTasks(context, viewModel.todosWithTasks.value)
-                        }.padding(8.dp))
+                    Text(
+                        "Export as Database",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showExportDialog = false
+                                exportDatabase(context, ToDoDatabase.DATABASE_NAME)
+                            }
+                            .padding(8.dp)
+                    )
+                    Text(
+                        "Export as Ics",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showExportDialog = false
+                                exportAsIcsWithTasks(context, viewModel.todosWithTasks.value)
+                            }
+                            .padding(8.dp)
+                    )
                 }
             },
-            dismissButton = { Text("Cancel", modifier = Modifier.clickable { showExportDialog = false }) }
+            dismissButton = {
+                Text(
+                    "Cancel",
+                    modifier = Modifier.clickable { showExportDialog = false })
+            }
         )
     }
 }

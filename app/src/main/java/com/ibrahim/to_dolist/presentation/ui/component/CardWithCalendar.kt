@@ -66,7 +66,7 @@ import kotlinx.coroutines.delay
 import java.util.Calendar
 
 @Composable
-fun CardStickyNote(
+fun CardWithCalendar(
     modifier: Modifier = Modifier,
     text: String,
     colorArray: ToDoStickyColors,
@@ -113,97 +113,97 @@ fun CardStickyNote(
         visible = visibleDelete,
         exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
     ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            colorArray.listColor[0],
-                            colorArray.listColor[1]
+        Card(
+            modifier = modifier,
+            shape = RoundedCornerShape(8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                colorArray.listColor[0],
+                                colorArray.listColor[1]
+                            )
                         )
                     )
-                )
-        ) {
-
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val cornerSize = 40.dp.toPx()
-                val path = Path().apply {
-                    moveTo(0f, size.height)
-                    lineTo(cornerSize, size.height)
-                    lineTo(0f, size.height - cornerSize)
-                    close()
-                }
-                drawPath(
-                    path = path,
-                    color = colorArray.listColor[2]
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
             ) {
-                Row(
+
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val cornerSize = 40.dp.toPx()
+                    val path = Path().apply {
+                        moveTo(0f, size.height)
+                        lineTo(cornerSize, size.height)
+                        lineTo(0f, size.height - cornerSize)
+                        close()
+                    }
+                    drawPath(
+                        path = path,
+                        color = colorArray.listColor[2]
+                    )
+                }
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.5f),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(16.dp),
                 ) {
-                    IconButton(onClick = {
-                        if (isLocked) {
-                            authenticateThenShowDialog { showDialogDelete = true }
-                        } else {
-                            showDialogDelete = true
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(0.5f),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(onClick = {
+                            if (isLocked) {
+                                authenticateThenShowDialog { showDialogDelete = true }
+                            } else {
+                                showDialogDelete = true
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    IconButton(onClick = {
-                        if (isLocked) {
-                            authenticateThenShowDialog { showDialogEdit = true }
-                        } else {
-                            showDialogEdit = true
+                        IconButton(onClick = {
+                            if (isLocked) {
+                                authenticateThenShowDialog { showDialogEdit = true }
+                            } else {
+                                showDialogEdit = true
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.edit),
-                            tint = MaterialTheme.colorScheme.tertiary
-                        )
                     }
+
+                    HorizontalDivider(color = Color.Black)
+                    Text(
+                        text = text + if (isLocked) "🔒" else "",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Black,
+                        modifier = Modifier.weight(0.5f)
+                    )
+
+                    Text(
+                        text = state.name.replace("_", " ").lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Black,
+                        modifier = Modifier.weight(1f),
+                        fontSize = 12.sp
+                    )
                 }
-
-                HorizontalDivider(color = Color.Black)
-                Text(
-                    text = text + if (isLocked) "🔒" else "",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
-                    modifier = Modifier.weight(0.5f)
-                )
-
-                Text(
-                    text = state.name.replace("_", " ").lowercase()
-                        .replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1f),
-                    fontSize = 12.sp
-                )
             }
         }
-    }
     }
 
     if (showDialogDelete) {
@@ -379,4 +379,3 @@ fun CardStickyNote(
         )
     }
 }
-

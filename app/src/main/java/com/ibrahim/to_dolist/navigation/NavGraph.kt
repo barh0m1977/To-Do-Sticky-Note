@@ -25,11 +25,11 @@ fun AppNavGraph(viewModel: ToDoViewModel = koinViewModel(), settingViewModel: Se
         composable(
             Routes.HOME,
             exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(500))
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(1000))
             },
             enterTransition = {
                 slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Right, tween(500)
+                    AnimatedContentTransitionScope.SlideDirection.Right, tween(1000)
                 )
             }) {
             HomeScreen(
