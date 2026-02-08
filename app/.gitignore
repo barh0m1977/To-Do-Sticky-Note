@@ -1,5 +1,6 @@
 # Gradle / Android
 /build/
+/build/release
 /app/build/
 .gradle/
 *.apk
