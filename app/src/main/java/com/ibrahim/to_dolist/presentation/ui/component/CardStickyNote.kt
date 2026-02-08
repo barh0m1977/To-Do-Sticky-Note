@@ -76,20 +76,22 @@ fun CardStickyNote(
     var isLockedState by rememberSaveable { mutableStateOf(isLocked) }
 
     val context = LocalContext.current
-    val activity = context as FragmentActivity
+    val activity = context as? FragmentActivity
     LaunchedEffect(isLocked) {
         isLockedState = isLocked
     }
     fun authenticateThenShowDialog(showDialog: () -> Unit) {
-        BiometricHelper(
-            activity = activity,
-            onSuccess = {
-                showDialog()
-            },
-            onError = { msg ->
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-            }
-        ).authenticate()
+        activity?.let {fragmentActivity ->
+            BiometricHelper(
+                context = fragmentActivity,
+                onSuccess = {
+                    showDialog()
+                },
+                onError = { msg ->
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                }
+            ).authenticate()
+        }
     }
 
     Card(

@@ -7,12 +7,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ibrahim.to_dolist.presentation.ui.screens.HomeScreen
-import com.ibrahim.to_dolist.presentation.ui.screens.SettingsScreen
-import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
+import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsScreen
+import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsViewModel
+import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 
 
 @Composable
-fun AppNavGraph(viewModel: ToDoViewModel) {
+fun AppNavGraph(viewModel: ToDoViewModel,settingsViewModel: SettingsViewModel) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "home") {
@@ -38,7 +39,7 @@ fun AppNavGraph(viewModel: ToDoViewModel) {
                     AnimatedContentTransitionScope.SlideDirection.Left, tween(1050)
                 )
             }) {
-            SettingsScreen(navController = navController)
+            SettingsScreen(navController = navController, viewModel = settingsViewModel,todoViewModel = viewModel)
         }
 
 

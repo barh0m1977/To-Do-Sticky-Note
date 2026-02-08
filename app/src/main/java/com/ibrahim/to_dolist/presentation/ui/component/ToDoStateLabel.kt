@@ -32,10 +32,12 @@ fun ToDoStateLabel(
     val boxSize=(state.name.length+4).dp
     @Composable
     fun stateTitle(name: String): String{
-        if (name == ToDoState.PENDING.name) return stringResource(R.string.pending)
-        else if (name == ToDoState.IN_PROGRESS.name) return stringResource(R.string.in_progress)
-        else if (name == ToDoState.DONE.name) return stringResource(R.string.done)
-        return ""
+        return when (name) {
+            ToDoState.PENDING.name -> stringResource(R.string.pending)
+            ToDoState.IN_PROGRESS.name -> stringResource(R.string.in_progress)
+            ToDoState.DONE.name -> stringResource(R.string.done)
+            else -> ""
+        }
     }
     Box(
         modifier = Modifier

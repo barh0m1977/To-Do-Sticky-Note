@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.Tasks
-import com.ibrahim.to_dolist.presentation.viewmodel.ToDoViewModel
+import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 
 @Composable
 fun TaskDialog(

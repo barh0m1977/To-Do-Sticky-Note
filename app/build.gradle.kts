@@ -80,6 +80,8 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     //admob ads
     implementation(libs.play.services.ads)
+    //json creation
+    implementation(libs.gson)
 
 
 

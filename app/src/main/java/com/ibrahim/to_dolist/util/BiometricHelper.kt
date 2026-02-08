@@ -1,15 +1,21 @@
 package com.ibrahim.to_dolist.util
 
+import android.content.Context
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
 class BiometricHelper(
-    private val activity: FragmentActivity,
+    private val context: Context,
     private val onSuccess: () -> Unit,
     private val onError: (String) -> Unit
 ) {
     fun authenticate() {
+
+        val activity = context as? FragmentActivity ?:run{
+        onError("Biometric requires FragmentActivity")
+            return
+        }
         val executor = ContextCompat.getMainExecutor(activity)
         val prompt = BiometricPrompt(
             activity,
