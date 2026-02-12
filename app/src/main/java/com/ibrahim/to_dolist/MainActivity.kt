@@ -12,6 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import com.google.android.gms.ads.MobileAds
 import com.ibrahim.to_dolist.core.utility.LocaleHelper
@@ -39,8 +42,13 @@ class MainActivity : FragmentActivity()  {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val instance= WindowCompat.getInsetsController(window,window.decorView)
+        instance.apply {
+            hide(WindowInsetsCompat.Type.statusBars())
+            hide(WindowInsetsCompat.Type.navigationBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) enableEdgeToEdge()
-
         CoroutineScope(Dispatchers.IO).launch { MobileAds.initialize(this@MainActivity) {} }
 
         setContent {
