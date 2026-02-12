@@ -60,5 +60,6 @@
     <string name="app_version">App Version</string>
     <string name="version">Version</string>
     <string name="export">Export</string>
+    <string name="import_from">Import</string>
 
 </resources>

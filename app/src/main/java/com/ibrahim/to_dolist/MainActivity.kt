@@ -20,6 +20,7 @@ import com.ibrahim.to_dolist.data.settings.SettingsRepository
 import com.ibrahim.to_dolist.navigation.AppNavGraph
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.AppLanguage
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsViewModel
+import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ActionType
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoAction
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
@@ -29,7 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-class MainActivity : FragmentActivity() {
+class MainActivity : FragmentActivity()  {
 
     private val viewModel: ToDoViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels {
@@ -51,29 +52,30 @@ class MainActivity : FragmentActivity() {
 
             LaunchedEffect(Unit) {
                 viewModel.action.collect { action ->
-                    when (action) {
+                    when(action) {
 
                         is ToDoAction.RequestBiometric -> {
                             BiometricHelper(
                                 context = this@MainActivity,
                                 onSuccess = {
-                                    viewModel.openAfterBiometric(action.todo)
+                                    when(action.afterSuccess) {
+                                        ActionType.OPEN -> viewModel.openAfterBiometric(action.todo)
+                                        ActionType.DELETE -> viewModel.deleteAfterBiometric(action.todo)
+                                        ActionType.EDIT -> viewModel.editeAfterBiometric(action.todo)
+                                    }
                                 },
-                                onError = {
-                                    Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
-                                }
+                                onError = { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
                             ).authenticate()
                         }
-                        is ToDoAction.OpenTodo -> {
-                            viewModel.openAfterBiometric(action.todo)
-                        }
 
-                        is ToDoAction.ShowMessage -> {
-                            Toast.makeText(this@MainActivity, action.message, Toast.LENGTH_SHORT).show()
-                        }
+                        is ToDoAction.OpenTodo -> viewModel.openAfterBiometric(action.todo)
+                        is ToDoAction.DeleteTodo -> viewModel.deleteAfterBiometric(action.todo)
+                        is ToDoAction.EditTodo -> viewModel.editeAfterBiometric(action.todo)
+                        is ToDoAction.ShowMessage -> Toast.makeText(this@MainActivity, action.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
+
 
 
 

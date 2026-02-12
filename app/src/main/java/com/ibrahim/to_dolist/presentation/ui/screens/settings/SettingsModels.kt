@@ -5,6 +5,8 @@ import com.ibrahim.to_dolist.R
 enum class AppLanguage {EN,AR}
 enum class AppTheme {LIGHT,DARK,SYSTEM}
 enum class ExportFormat{CSV,JSON}
+enum class ImportFormat{CSV,JSON}
+
 
 
 

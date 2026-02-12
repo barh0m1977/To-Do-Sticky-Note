@@ -1,9 +1,15 @@
 package com.ibrahim.to_dolist.data.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
+import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoWithTasks
-import com.ibrahim.to_dolist.data.model.Tasks
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -24,6 +30,9 @@ interface ToDoDao {
     // --- SubTask Operations ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSubTask(subTask: Tasks)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReturnId(todo: ToDo): Long
 
     @Update
     suspend fun updateSubTask(subTask: Tasks)

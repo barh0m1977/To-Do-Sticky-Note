@@ -55,30 +55,22 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier) {
         items(todos, key = { it.id }) { todo ->
             CardStickyNote(
                 modifier = Modifier
-                    .clickable {
-                        viewModel.onTodoClicked(todo)
-                    }
                     .fillMaxWidth()
                     .height(160.dp)
                     .padding(top = 16.dp)
+                    .clickable{
+                        viewModel.onTodoClicked(todo)
+                    }
                     .animateItemPlacement(),
                 text = todo.title,
                 colorArray = todo.cardColor,
                 state = todo.state,
-                onDeleteConfirmed = { viewModel.deleteToDoLocal(todo) },
-                onEditConfirmed = { updatedToDo ->
-                    viewModel.updateToDo(
-                        todo.copy(
-                            title = updatedToDo.title,
-                            cardColor = updatedToDo.cardColor,
-                            state = updatedToDo.state,
-                            locked = updatedToDo.locked
-                        )
-                    )
-                },
-                onClick = { },
-                isLocked = todo.locked
+                isLocked = todo.locked,
+                onClick = { viewModel.onTodoClicked(todo) },
+                onDeleteConfirmed = { viewModel.requestDelete(todo) },
+                onEditConfirmed = { updatedToDo -> viewModel.requestEdit(updatedToDo) }
             )
+
         }
     }
 

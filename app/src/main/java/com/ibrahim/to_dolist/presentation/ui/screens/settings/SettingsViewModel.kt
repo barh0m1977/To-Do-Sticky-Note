@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ibrahim.to_dolist.data.model.ToDoWithTasks
 import com.ibrahim.to_dolist.data.settings.SettingsRepository
+import com.ibrahim.to_dolist.util.DataImporter
 import com.ibrahim.to_dolist.util.TaskExporter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,17 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
             }
         }
     }
+    suspend fun importData(
+        context: Context,
+        file: File,
+        format: ImportFormat
+    ): List<ToDoWithTasks> {
+        return when (format) {
+            ImportFormat.JSON -> DataImporter.importFromJSON(context, file)
+            ImportFormat.CSV -> DataImporter.importFromCSV(file)
+        }
+    }
+
 
 
     fun clearExportStatus() {

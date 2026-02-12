@@ -1,8 +1,10 @@
 package com.ibrahim.to_dolist.core.utility
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.Build
+import androidx.activity.ComponentActivity
 import java.util.Locale
 
 object LocaleHelper {
@@ -20,5 +22,11 @@ object LocaleHelper {
         }
 
         return context.createConfigurationContext(config)
+    }
+    // Helper function to find the activity
+    fun Context.findActivity(): ComponentActivity? = when (this) {
+        is ComponentActivity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
     }
 }

@@ -1,3 +1,4 @@
+
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -52,7 +53,6 @@ import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
 import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
 import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
 import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
-import com.ibrahim.to_dolist.util.BiometricHelper
 import kotlinx.coroutines.delay
 
 @Composable
@@ -79,19 +79,6 @@ fun CardStickyNote(
     val activity = context as? FragmentActivity
     LaunchedEffect(isLocked) {
         isLockedState = isLocked
-    }
-    fun authenticateThenShowDialog(showDialog: () -> Unit) {
-        activity?.let {fragmentActivity ->
-            BiometricHelper(
-                context = fragmentActivity,
-                onSuccess = {
-                    showDialog()
-                },
-                onError = { msg ->
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                }
-            ).authenticate()
-        }
     }
 
     Card(
@@ -139,11 +126,7 @@ fun CardStickyNote(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(onClick = {
-                        if (isLocked) {
-                            authenticateThenShowDialog { showDialogDelete = true }
-                        } else {
-                            showDialogDelete = true
-                        }
+                          onDeleteConfirmed()
                     }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -152,11 +135,14 @@ fun CardStickyNote(
                         )
                     }
                     IconButton(onClick = {
-                        if (isLocked) {
-                            authenticateThenShowDialog { showDialogEdit = true }
-                        } else {
-                            showDialogEdit = true
-                        }
+                        onEditConfirmed(
+                            ToDo(
+                                title = text,
+                                cardColor = colorArray,
+                                state = state,
+                                locked = isLocked
+                            )
+                        )
                     }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -177,6 +163,7 @@ fun CardStickyNote(
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black,
                     modifier = Modifier.weight(0.5f)
+
                 )
 
                 Text(
