@@ -1,12 +1,10 @@
 package com.ibrahim.to_dolist
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -23,17 +21,14 @@ import com.ibrahim.to_dolist.data.settings.SettingsRepository
 import com.ibrahim.to_dolist.navigation.AppNavGraph
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.AppLanguage
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsViewModel
-import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ActionType
-import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoAction
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
-import com.ibrahim.to_dolist.util.BiometricHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-class MainActivity : FragmentActivity()  {
+class MainActivity : FragmentActivity() {
 
     private val viewModel: ToDoViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels {
@@ -42,7 +37,7 @@ class MainActivity : FragmentActivity()  {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val instance= WindowCompat.getInsetsController(window,window.decorView)
+        val instance = WindowCompat.getInsetsController(window, window.decorView)
         instance.apply {
             hide(WindowInsetsCompat.Type.statusBars())
             hide(WindowInsetsCompat.Type.navigationBars())
@@ -56,43 +51,14 @@ class MainActivity : FragmentActivity()  {
             val theme by settingsViewModel.theme.collectAsState()
 
             // Compose context with selected locale
-            val localizedContext = LocaleHelper.setLocale(LocalContext.current, language.name.lowercase())
-
-            LaunchedEffect(Unit) {
-                viewModel.action.collect { action ->
-                    when(action) {
-
-                        is ToDoAction.RequestBiometric -> {
-                            BiometricHelper(
-                                context = this@MainActivity,
-                                onSuccess = {
-                                    when(action.afterSuccess) {
-                                        ActionType.OPEN -> viewModel.openAfterBiometric(action.todo)
-                                        ActionType.DELETE -> viewModel.deleteAfterBiometric(action.todo)
-                                        ActionType.EDIT -> viewModel.editeAfterBiometric(action.todo)
-                                    }
-                                },
-                                onError = { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
-                            ).authenticate()
-                        }
-
-                        is ToDoAction.OpenTodo -> viewModel.openAfterBiometric(action.todo)
-                        is ToDoAction.DeleteTodo -> viewModel.deleteAfterBiometric(action.todo)
-                        is ToDoAction.EditTodo -> viewModel.editeAfterBiometric(action.todo)
-                        is ToDoAction.ShowMessage -> Toast.makeText(this@MainActivity, action.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-
-
-
-
+            val localizedContext =
+                LocaleHelper.setLocale(LocalContext.current, language.name.lowercase())
             CompositionLocalProvider(
                 LocalLayoutDirection provides if (language == AppLanguage.AR) LayoutDirection.Rtl else LayoutDirection.Ltr,
                 LocalContext provides localizedContext
             ) {
                 ToDoListTheme(theme.name) {
-                    AppNavGraph(viewModel, settingsViewModel)
+                    AppNavGraph(viewModel, settingsViewModel,this@MainActivity)
                 }
             }
         }

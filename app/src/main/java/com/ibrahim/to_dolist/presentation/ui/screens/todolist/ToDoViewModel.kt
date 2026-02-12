@@ -94,18 +94,30 @@ class ToDoViewModel(application: Application) : AndroidViewModel(application) {
 
     fun requestDelete(todo: ToDo) {
         viewModelScope.launch {
-            if (todo.locked) _action.send(ToDoAction.RequestBiometric(todo, ActionType.DELETE))
-            else _action.send(ToDoAction.DeleteTodo(todo))
+            if (todo.locked) {
+                _action.send(ToDoAction.RequestBiometric(todo, ActionType.DELETE))
+            } else {
+                _action.send(ToDoAction.RequestConfirm(todo, ActionType.DELETE))
+            }
         }
     }
 
     fun requestEdit(todo: ToDo) {
         viewModelScope.launch {
-            if (todo.locked) _action.send(ToDoAction.RequestBiometric(todo, ActionType.EDIT))
-            else _action.send(ToDoAction.EditTodo(todo))
+            if (todo.locked) {
+                _action.send(ToDoAction.RequestBiometric(todo, ActionType.EDIT))
+            } else {
+                _action.send(ToDoAction.RequestConfirm(todo, ActionType.EDIT))
+            }
         }
     }
 
+
+    fun onConfirmationAgreed(todo: ToDo, type: ActionType) {
+        viewModelScope.launch {
+            _action.send(ToDoAction.RequestConfirm(todo, type))
+        }
+    }
 
     fun openAfterBiometric(todo: ToDo) {
         _selectedToDo.value = todo

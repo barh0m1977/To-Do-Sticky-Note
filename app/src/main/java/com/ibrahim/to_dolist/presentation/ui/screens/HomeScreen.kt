@@ -56,6 +56,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
+import com.ibrahim.to_dolist.MainActivity
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
@@ -256,7 +257,7 @@ fun ToDoTopBar(
 }
 
 @Composable
-fun HomeScreen(viewModel: ToDoViewModel, navController: NavController) {
+fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActivity: MainActivity) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     var text by rememberSaveable { mutableStateOf("") }
     var colorVal by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
@@ -297,7 +298,8 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController) {
             )
             ToDoListScreen(
                 viewModel,
-                modifier = Modifier
+                modifier = Modifier,
+                mainActivity
             )
 
         }
