@@ -79,8 +79,8 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
                         onSuccess = {
                             when(action.afterSuccess){
                                 ActionType.OPEN -> viewModel.openAfterBiometric(action.todo)
-                                ActionType.DELETE -> viewModel.deleteAfterBiometric(action.todo)
-                                ActionType.EDIT -> viewModel.editeAfterBiometric(action.todo)
+                                ActionType.DELETE -> viewModel.onConfirmationAgreed(action.todo, ActionType.DELETE)
+                                ActionType.EDIT -> viewModel.onConfirmationAgreed(action.todo, ActionType.EDIT)
                             }
                         },
                         onError = { Toast.makeText(mainActivity, it, Toast.LENGTH_SHORT).show() }
