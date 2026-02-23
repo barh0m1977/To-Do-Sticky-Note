@@ -14,15 +14,19 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,10 +37,12 @@ import androidx.core.content.ContextCompat
 import com.ibrahim.to_dolist.MainActivity
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
-import com.ibrahim.to_dolist.presentation.ui.component.dialog.TaskEditDialog
+import com.ibrahim.to_dolist.presentation.ui.component.TaskSheet
+import com.ibrahim.to_dolist.presentation.util.TaskSheetType
 import com.ibrahim.to_dolist.util.BiometricHelper
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: MainActivity) {
     val todos by viewModel.todos.collectAsState()
@@ -58,6 +64,13 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
 
     var showDeleteDialog by remember { mutableStateOf<ToDo?>(null) }
     var showEditDialog by remember { mutableStateOf<ToDo?>(null) }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    val scope = rememberCoroutineScope()
+    var showSheet by rememberSaveable { mutableStateOf<ToDo?>(null) }
+
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
             when (action) {
@@ -65,7 +78,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
                     when (action.type) {
 
                         ActionType.DELETE -> showDeleteDialog = action.todo
-                        ActionType.EDIT -> showEditDialog = action.todo
+                        ActionType.EDIT -> showSheet = action.todo
                         else -> {}
                     }
                 }
@@ -117,7 +130,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
                     .clickable {
                         viewModel.onTodoClicked(todo)
                     }
-                    .animateItemPlacement(),
+                    .animateItem(),
                 text = todo.title,
                 colorArray = todo.cardColor,
                 state = todo.state,
@@ -131,6 +144,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
     }
 
     selectedToDo?.let { todo ->
+
         TaskDialog(
             todoTitle = todo.title,
             todoId = todo.id,
@@ -161,14 +175,30 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
         )
     }
 
-    // Edit Dialog
-    showEditDialog?.let { todo ->
-        TaskEditDialog(
-            todo = todo,
-            onUpdate = { updated -> viewModel.updateToDo(updated); showEditDialog = null },
-            onDismiss = { showEditDialog = null }
-        )
-    }
+    // Edit sheet
 
+    showSheet?.let { selectedTodo ->
+
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = null },
+            sheetState = sheetState
+        ) {
+
+            TaskSheet(
+                type = TaskSheetType.UPDATE,
+                task = selectedTodo,
+                onTaskAction = { updatedTodo ->
+
+                    viewModel.updateToDo(updatedTodo)
+
+                    scope.launch {
+                        sheetState.hide()
+                    }
+
+                    showSheet = null
+                }
+            )
+        }
+    }
 
 }

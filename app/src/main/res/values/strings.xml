@@ -33,7 +33,7 @@
     <string name="pending">Pending</string>
     <string name="in_progress">In Progress</string>
     <string name="done">Done</string>
-    <string name="task_text_here">task title here...</string>
+    <string name="task_text_here">What needs to be done?</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
     <string name="confirm">Confirm</string>
@@ -61,5 +61,6 @@
     <string name="version">Version</string>
     <string name="export">Export</string>
     <string name="import_from">Import</string>
+    <string name="create_task">Create Task</string>
 
 </resources>

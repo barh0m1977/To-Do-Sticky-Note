@@ -70,36 +70,7 @@ fun SettingsScreen(
     var selectedImportFormat by remember { mutableStateOf(ImportFormat.CSV) }
     val scope = rememberCoroutineScope()
 
-    // File picker launcher (works unconditionally)
-//    val importFileLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.GetContent()
-//    ) { uri ->
-//        uri?.let {
-//            scope.launch {
-//                try {
-//                    val tempFile = File(context.cacheDir, "import_temp")
-//                    context.contentResolver.openInputStream(it)?.use { input ->
-//                        tempFile.outputStream().use { output ->
-//                            input.copyTo(output)
-//                        }
-//                    }
-//
-//                    val importedTasks =
-//                        viewModel.importData(context, tempFile, selectedImportFormat)
-//
-//                    DataImporter.importToDatabase(context, importedTasks)
-//
-//                    Toast.makeText(context, "Import completed!", Toast.LENGTH_SHORT).show()
-//                } catch (e: Exception) {
-//                    Toast.makeText(
-//                        context,
-//                        "Import failed: ${e.message}",
-//                        Toast.LENGTH_LONG
-//                    ).show()
-//                }
-//            }
-//        }
-//    }
+
 
     // Show export completion message
     LaunchedEffect(exportStatus) {

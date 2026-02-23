@@ -1,16 +1,11 @@
 package com.ibrahim.to_dolist.presentation.ui.component
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ibrahim.to_dolist.R
@@ -29,9 +24,10 @@ fun ToDoStateLabel(
 //    }
 
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-    val boxSize=(state.name.length+4).dp
+    val boxSize = (state.name.length + 4).dp
+
     @Composable
-    fun stateTitle(name: String): String{
+    fun stateTitle(name: String): String {
         return when (name) {
             ToDoState.PENDING.name -> stringResource(R.string.pending)
             ToDoState.IN_PROGRESS.name -> stringResource(R.string.in_progress)
@@ -39,15 +35,20 @@ fun ToDoStateLabel(
             else -> ""
         }
     }
-    Box(
-        modifier = Modifier
-            .clickable { onClick(state) }
-            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(15.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
+//    Box(
+//        modifier = Modifier
+//            .clickable { onClick(state) }
+//            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(15.dp))
+////            .padding(horizontal = 12.dp, vertical = 6.dp)
+//    ) {
         Text(
-            text = stateTitle(state.name).replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
-            fontSize = 14.sp
+            text = stateTitle(state.name).replace("_", " ").lowercase()
+                .replaceFirstChar { it.uppercase() },
+            fontSize = 14.sp,
+            color =
+                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
-}
+//}
