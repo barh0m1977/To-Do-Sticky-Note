@@ -43,11 +43,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ibrahim.to_dolist.R
+import com.ibrahim.to_dolist.animation.AnimatedPlaceholder
+import com.ibrahim.to_dolist.core.utility.LocaleHelper.isLeesThan
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
-import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
-import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
 import com.ibrahim.to_dolist.presentation.util.TaskSheetType
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
 
@@ -90,7 +90,7 @@ fun TaskSheet(
             style = MaterialTheme.typography.labelMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
+            OutlinedTextField(
             value = title,
             onValueChange = { title = it },
             placeholder = { AnimatedPlaceholder(textFieldValue = title) },

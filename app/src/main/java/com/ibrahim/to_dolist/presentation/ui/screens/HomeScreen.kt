@@ -35,7 +35,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +44,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -63,30 +61,8 @@ import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoListScreen
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import com.ibrahim.to_dolist.presentation.util.SortDirection
 import com.ibrahim.to_dolist.presentation.util.SortOption
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@Composable
-fun AnimatedPlaceholder(textFieldValue: String) {
-    val fullText = stringResource(R.string.task_text_here)
-    var visibleText by remember { mutableStateOf("") }
-
-    LaunchedEffect(key1 = textFieldValue.isEmpty()) {
-        while (textFieldValue.isEmpty()) {
-            for (i in 1..fullText.length) {
-                visibleText = fullText.take(i)
-                delay(100)
-            }
-            delay(500)
-            visibleText = ""
-            delay(300)
-        }
-    }
-
-    if (textFieldValue.isEmpty()) {
-        Text(visibleText, color = Color.Gray)
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -222,7 +198,6 @@ fun ToDoTopBar(
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActivity: MainActivity) {
@@ -273,7 +248,8 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActiv
             ToDoListScreen(
                 viewModel,
                 modifier = Modifier,
-                mainActivity
+                mainActivity,
+                navController
             )
 
         }
@@ -299,148 +275,9 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActiv
             }
         }
 
-        // New Task Dialog
-//        if (showDialog) {
-
-//            AlertDialog(
-//                onDismissRequest = { showDialog = false },
-//                title = { Text(stringResource(R.string.new_task)) },
-//                text = {
-//                    Column {
-//                        Text(stringResource(R.string.enter_task_title))
-//                        Spacer(Modifier.height(8.dp))
-//                        TextField(
-//                            value = text,
-//                            onValueChange = { text = it },
-//                            placeholder = { AnimatedPlaceholder(textFieldValue = text) }
-//                        )
-//
-//                        Spacer(Modifier.height(8.dp))
-//                        Text(stringResource(R.string.select_color))
-//                        Spacer(Modifier.height(8.dp))
-//                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-//                            items(ToDoStickyColors.entries.size) { index ->
-//                                val color = ToDoStickyColors.entries[index]
-//                                ColorCircle(
-//                                    color = color.listColor[0],
-//                                    isSelected = color == selectedColor
-//                                ) {
-//                                    selectedColor = color
-//                                    colorVal = color
-//                                }
-//                            }
-//                        }
-//
-//                        Spacer(Modifier.height(8.dp))
-//                        Text(stringResource(R.string.select_state))
-//                        Spacer(Modifier.height(8.dp))
-//                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-//                            items(ToDoState.entries.size) { index ->
-//                                val state = ToDoState.entries[index]
-//                                ToDoStateLabel(
-//                                    state = state,
-//                                    isSelected = state == selectedState
-//                                ) {
-//                                    selectedState = it
-//                                }
-//                            }
-//                        }
-//
-//                        Spacer(Modifier.height(12.dp))
-//                        Row(
-//                            verticalAlignment = Alignment.CenterVertically,
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) {
-//                            Checkbox(
-//                                checked = isChecked,
-//                                onCheckedChange = { checked ->
-//                                    val biometricManager = BiometricManager.from(context)
-//                                    when (biometricManager.canAuthenticate(
-//                                        BiometricManager.Authenticators.BIOMETRIC_STRONG
-//                                    )) {
-//                                        BiometricManager.BIOMETRIC_SUCCESS -> {
-//                                            isLocked = checked
-//                                            isChecked = checked
-//                                        }
-//
-//                                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-//                                            isLocked = false
-//                                            isChecked = false
-//                                            Toast.makeText(
-//                                                context,
-//                                                context.getString(R.string.no_fingerprints_enrolled),
-//                                                Toast.LENGTH_LONG
-//                                            ).show()
-//                                        }
-//
-//                                        BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
-//                                            isLocked = false
-//                                            isChecked = false
-//                                            Toast.makeText(
-//                                                context,
-//                                                context.getString(R.string.no_fingerprint_hardware),
-//                                                Toast.LENGTH_LONG
-//                                            ).show()
-//                                        }
-//
-//                                        else -> {
-//                                            isLocked = false
-//                                            isChecked = false
-//                                            Toast.makeText(
-//                                                context,
-//                                                context.getString(R.string.fingerprint_unavailable),
-//                                                Toast.LENGTH_LONG
-//                                            ).show()
-//                                        }
-//                                    }
-//                                }
-//                            )
-//                            Spacer(Modifier.width(8.dp))
-//                            Text(stringResource(R.string.lock_this_task_with_fingerprint))
-//                        }
-//                    }
-//                },
-//                confirmButton = {
-//                    Button(onClick = {
-//                        if (isLeesThan(text)) {
-//                            viewModel.addToDo(
-//                                ToDo(
-//                                    title = text,
-//                                    cardColor = colorVal,
-//                                    state = selectedState,
-//                                    locked = isLocked
-//                                )
-//                            )
-//                            showDialog = false
-//                            text = ""
-//                            isChecked = false
-//                            isLocked = false
-//                        } else {
-//                            Toast.makeText(
-//                                context,
-//                                context.getString(R.string.should_title_be_short_less_than_13_characters),
-//                                Toast.LENGTH_LONG
-//                            ).show()
-//                        }
-//                    }) {
-//                        Text(stringResource(R.string.add))
-//                    }
-//                },
-//                dismissButton = {
-//                    TextButton(onClick = {
-//                        showDialog = false
-//                        text = ""
-//                        isLocked = false
-//                        isChecked = false
-//                    }) {
-//                        Text(stringResource(R.string.cancel))
-//                    }
-//                }
-//            )
-        }
     }
-//}
 
+}
 @Composable
 fun BannerAd(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -456,6 +293,3 @@ fun BannerAd(modifier: Modifier = Modifier) {
     )
 }
 
-fun isLeesThan(text: String): Boolean {
-    return text.isNotEmpty() && text.isNotBlank() && text.length <= 13
-}

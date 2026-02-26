@@ -1,6 +1,5 @@
 package com.ibrahim.to_dolist.presentation.ui.component.dialog
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,13 +27,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ibrahim.to_dolist.R
+import com.ibrahim.to_dolist.animation.AnimatedPlaceholder
+import com.ibrahim.to_dolist.core.utility.LocaleHelper.isLeesThan
 import com.ibrahim.to_dolist.data.model.ToDo
 import com.ibrahim.to_dolist.data.model.ToDoState
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.ColorCircle
 import com.ibrahim.to_dolist.presentation.ui.component.ToDoStateLabel
-import com.ibrahim.to_dolist.presentation.ui.screens.AnimatedPlaceholder
-import com.ibrahim.to_dolist.presentation.ui.screens.isLeesThan
+
 
 @Composable
 fun TaskEditDialog(
@@ -104,11 +104,11 @@ fun TaskEditDialog(
                         )
                     )
                 } else {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.should_title_be_short_less_than_13_characters),
-                        Toast.LENGTH_LONG
-                    ).show()
+//                    Toast.makeText(
+//                        context,
+//                        stringResource(R.string.should_title_be_short_less_than_13_characters),
+//                        Toast.LENGTH_LONG
+//                    ).show()
                 }
             }) { Text(stringResource(R.string.update)) }
         },

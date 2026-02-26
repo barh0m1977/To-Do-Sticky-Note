@@ -29,4 +29,9 @@ object LocaleHelper {
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
+
+    fun isLeesThan(text: String): Boolean {
+        return text.isNotEmpty() && text.isNotBlank() && text.length <= 13
+    }
+
 }

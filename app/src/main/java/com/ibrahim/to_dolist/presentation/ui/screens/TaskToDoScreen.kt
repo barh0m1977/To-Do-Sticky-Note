@@ -1,6 +1,13 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,261 +15,417 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ibrahim.to_dolist.data.model.ToDo
+import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.cardStyle.ToDoCard
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
+import kotlinx.coroutines.launch
 
-// Define custom colors based on the screenshot
-val LightGreen = Color(0xFFE0F7FA)
-val DarkGreen = Color(0xFF00C853)
-val LightBlue = Color(0xFFE3F2FD)
-val DarkBlue = Color(0xFF2196F3)
-val LightGray = Color(0xFFF5F5F5)
-val DarkGray = Color(0xFF9E9E9E)
-val TextGray = Color(0xFF616161)
-val BackgroundColor = Color(0xFFF0F4F8) // A light background color
+// ─── Colors ───────────────────────────────────────────────────────────────────
+
+private val LightGreen = Color(0xFFE0F7FA)
+private val DarkGreen = Color(0xFF00C853)
+private val DarkGray = Color(0xFF9E9E9E)
+private val BackgroundColor = Color(0xFFF0F4F8)
+
+// ─── Animation specs (top-level = allocated once, never recreated on recompose) ──
+
+private val TaskEnterTransition = fadeIn(tween(300)) + slideInVertically(
+    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+    initialOffsetY = { it / 2 },
+)
+private val TaskExitTransition = fadeOut(tween(200)) + slideOutVertically(
+    animationSpec = tween(200),
+    targetOffsetY = { -it / 2 },
+)
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskListScreen(viewModel: ToDoViewModel,todoId: Int) {
+fun TaskListScreen(
+    viewModel: ToDoViewModel,
+    todoId: Int,
+    cardColor: String,
+    todoTitle: String = "My Tasks",
+    onNavigateBack: () -> Unit,
+) {
+    val tasks by viewModel.getTasksFlow(todoId).collectAsStateWithLifecycle(emptyList())
+    val scope = rememberCoroutineScope()
 
-    val tasks by viewModel
-        .getTasksFlow(todoId)
-        .collectAsStateWithLifecycle(emptyList())
+    // Derived — no extra state, no stale data
+    val activeTasks = tasks.filter { !it.isChecked }
+    val completedTasks = tasks.filter { it.isChecked }
+
+    val accentColor = remember(cardColor) {
+        ToDoStickyColors.valueOf(cardColor).listColor[1]
+    }
+
+    // Search state hoisted to screen level so it can filter tasks
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    val filteredActive = remember(activeTasks, searchQuery) {
+        if (searchQuery.isBlank()) activeTasks
+        else activeTasks.filter { it.text.contains(searchQuery, ignoreCase = true) }
+    }
+    val filteredCompleted = remember(completedTasks, searchQuery) {
+        if (searchQuery.isBlank()) completedTasks
+        else completedTasks.filter { it.text.contains(searchQuery, ignoreCase = true) }
+    }
+
+    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
-        bottomBar = { TaskBottomNavigationBar() },
-        floatingActionButton = { TaskFloatingActionButton() },
-        floatingActionButtonPosition = FabPosition.End
-    ) {  paddingValues ->
-        Column(
+        topBar = {
+            TaskTopBar(
+                title = todoTitle,
+                accentColor = accentColor,
+                onNavigateBack = onNavigateBack,
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showBottomSheet = true },
+                containerColor = accentColor,
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add task",
+                    tint = Color.White,
+                )
+            }
+        },
+        containerColor = BackgroundColor,
+    ) { paddingValues ->
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BackgroundColor)
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "My Tasks",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            SearchBar()
-            Spacer(modifier = Modifier.height(24.dp))
-            ActiveTasksSection(tasks)
-            Spacer(modifier = Modifier.height(24.dp))
-            CompletedTasksSection()
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                TaskSearchBar(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            // ── Active tasks ─────────────────────────────────────────────
+            item {
+                TaskSectionHeader(
+                    label = "ACTIVE TASKS",
+                    badge = "${filteredActive.size} tasks",
+                    badgeBackground = LightGreen,
+                    badgeTextColor = DarkGreen,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            items(items = filteredActive, key = { it.id }) { task ->
+                AnimatedVisibility(
+                    visible = true,
+                    enter = TaskEnterTransition,
+                    exit = TaskExitTransition,
+                ) {
+                    ToDoCard(
+                        title = task.text,
+                        subtitle = "",
+                        accentColor = accentColor,
+                        isCompleted = false,
+                        onCheckedChange = { viewModel.updateTask(task.copy(isChecked = true)) },
+                    )
+                }
+            }
+
+            // ── Completed tasks ──────────────────────────────────────────
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
+                TaskSectionHeader(
+                    label = "COMPLETED",
+                    trailingAction = {
+                        if (filteredCompleted.isNotEmpty()) {
+                            TextButton(
+                                onClick = { filteredCompleted.forEach { viewModel.deleteTask(it) } },
+                            ) {
+                                Text("Clear all", color = DarkGray, fontSize = 12.sp)
+                            }
+                        }
+                    },
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            items(items = filteredCompleted, key = { it.id }) { task ->
+                AnimatedVisibility(
+                    visible = true,
+                    enter = TaskEnterTransition,
+                    exit = TaskExitTransition,
+                ) {
+                    ToDoCard(
+                        title = task.text,
+                        subtitle = "",
+                        accentColor = accentColor,
+                        isCompleted = true,
+                        onCheckedChange = { viewModel.updateTask(task.copy(isChecked = false)) },
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(80.dp)) } // FAB clearance
         }
+    }
+
+    // ── Add Task Bottom Sheet ─────────────────────────────────────────────────
+    if (showBottomSheet) {
+        AddTaskBottomSheet(
+            sheetState = sheetState,
+            accentColor = accentColor,
+            onDismiss = { showBottomSheet = false },
+            onConfirm = { text ->
+                if (text.isNotBlank()) {
+                    viewModel.addTask(todoId = todoId, text = text.trim())
+                }
+                scope.launch {
+                    sheetState.hide()
+                }.invokeOnCompletion {
+                    showBottomSheet = false
+                }
+            },
+        )
     }
 }
 
+// ─── TopBar ───────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBar() {
-    var searchText by remember { mutableStateOf("") }
+private fun TaskTopBar(
+    title: String,
+    accentColor: Color,
+    onNavigateBack: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Navigate back",
+                    tint = accentColor,
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = BackgroundColor,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        modifier = Modifier.padding(top = 18.dp),
+    )
+}
+
+// ─── Search Bar ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun TaskSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
     OutlinedTextField(
-        value = searchText,
-        onValueChange = { searchText = it },
+        value = query,
+        onValueChange = onQueryChange,
         placeholder = { Text("Search tasks...") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        singleLine = true,
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color.Transparent,
             unfocusedBorderColor = Color.Transparent,
             focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White
-        )
+            unfocusedContainerColor = Color.White,
+        ),
     )
 }
 
+// ─── Section Header ───────────────────────────────────────────────────────────
+
 @Composable
-fun ActiveTasksSection(toDo: ToDo) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "ACTIVE TASKS",
-                fontSize = 14.sp,
-                color = TextGray,
-                fontWeight = FontWeight.SemiBold
-            )
+private fun TaskSectionHeader(
+    label: String,
+    badge: String? = null,
+    badgeBackground: Color = Color.Transparent,
+    badgeTextColor: Color = Color.Unspecified,
+    trailingAction: @Composable (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            color = DarkGray,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp,
+        )
+
+        if (badge != null) {
             Card(
                 shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = LightGreen)
+                colors = CardDefaults.cardColors(containerColor = badgeBackground),
             ) {
                 Text(
-                    text = "4 items " ,
-                    color = DarkGreen,
+                    text = badge,
+                    color = badgeTextColor,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
         }
 
-        var completed by remember { mutableStateOf(false) }
-
-        ToDoCard(
-            title = toDo.title,
-            subtitle = toDo.state.name,
-            isCompleted = completed,
-            onCheckedChange = { completed = it }
-        )
+        trailingAction?.invoke()
     }
 }
 
-@Composable
-fun CompletedTasksSection() {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "COMPLETED",
-                fontSize = 14.sp,
-                color = TextGray,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Clear all",
-                color = DarkGray,
-                fontSize = 12.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        CompletedTaskItem("Weekly Sync Preparation", "Team • Done 2h ago")
-        Spacer(modifier = Modifier.height(8.dp))
-        CompletedTaskItem("Submit Expense Reports", "Finance • Done yesterday")
-    }
-}
-
-
-
+// ─── Add Task Bottom Sheet ────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompletedTaskItem(title: String, subtitle: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+private fun AddTaskBottomSheet(
+    sheetState: SheetState,
+    accentColor: Color,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var taskText by remember { mutableStateOf("") }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+
+    val submitTask = {
+        keyboard?.hide()
+        onConfirm(taskText)
+        taskText = ""
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .imePadding()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column {
-                Text(text = title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
-                Text(text = subtitle, color = DarkGray, fontSize = 14.sp)
-            }
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Completed",
-                tint = DarkGreen,
-                modifier = Modifier.size(24.dp)
+            Text(
+                text = "New Task",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
+
+            OutlinedTextField(
+                value = taskText,
+                onValueChange = { taskText = it },
+                placeholder = { Text("What needs to be done?") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { submitTask() }),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = accentColor,
+                ),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = DarkGray)
+                }
+
+                Button(
+                    onClick = { submitTask() },
+                    enabled = taskText.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                ) {
+                    Text("Add Task", color = Color.White)
+                }
+            }
         }
     }
-}
-
-@Composable
-fun TaskFloatingActionButton() {
-    FloatingActionButton(
-        onClick = { /*TODO*/ },
-        containerColor = DarkGreen,
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Icon(Icons.Default.Add, contentDescription = "Add Task", tint = Color.White)
-    }
-}
-
-@Composable
-fun TaskBottomNavigationBar() {
-    NavigationBar(
-        containerColor = Color.White,
-        modifier = Modifier.height(80.dp) // Adjust height as needed
-    ) {
-        NavigationBarItem(
-            selected = true,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Default.TaskAlt, contentDescription = "Tasks", tint = DarkGreen) },
-            label = { Text("Tasks", color = DarkGreen) }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar") },
-            label = { Text("Calendar") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Default.Folder, contentDescription = "Projects") },
-            label = { Text("Projects") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-            label = { Text("Profile") }
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewTaskListScreen() {
-    TaskListScreen()
 }

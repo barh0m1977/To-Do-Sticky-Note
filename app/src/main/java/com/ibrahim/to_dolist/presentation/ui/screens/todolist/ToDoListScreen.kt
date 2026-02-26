@@ -34,9 +34,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.ibrahim.to_dolist.MainActivity
 import com.ibrahim.to_dolist.data.model.ToDo
-import com.ibrahim.to_dolist.presentation.ui.component.TaskDialog
 import com.ibrahim.to_dolist.presentation.ui.component.TaskSheet
 import com.ibrahim.to_dolist.presentation.util.TaskSheetType
 import com.ibrahim.to_dolist.util.BiometricHelper
@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: MainActivity) {
+fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: MainActivity ,navController: NavController) {
     val todos by viewModel.todos.collectAsState()
     val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
@@ -70,7 +70,12 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
     )
     val scope = rememberCoroutineScope()
     var showSheet by rememberSaveable { mutableStateOf<ToDo?>(null) }
-
+    LaunchedEffect(selectedToDo) {
+        selectedToDo?.let { todo ->
+            navController.navigate("tasks/${todo.id}/${todo.cardColor.name}/${todo.title}")
+            viewModel.clearSelectedToDo()
+        }
+    }
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
             when (action) {
@@ -143,18 +148,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
         }
     }
 
-    selectedToDo?.let { todo ->
 
-        TaskDialog(
-            todoTitle = todo.title,
-            todoId = todo.id,
-            viewModel = viewModel,
-            onAddSubTask = { newText -> viewModel.addTask(todo.id, newText) },
-            onUpdateSubTask = { updatedTask -> viewModel.updateTask(updatedTask) },
-            onDeleteSubTask = { taskToDelete -> viewModel.deleteTask(taskToDelete) },
-            onDismiss = { viewModel.clearSelectedToDo() }
-        )
-    }
 
 
     // Delete Dialog
