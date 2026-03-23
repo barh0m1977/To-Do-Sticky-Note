@@ -62,5 +62,6 @@
     <string name="export">Export</string>
     <string name="import_from">Import</string>
     <string name="create_task">Create Task</string>
+    <string name="add_task">Add Task</string>
 
 </resources>

@@ -59,12 +59,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.cardStyle.ToDoCard
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
@@ -79,12 +81,12 @@ private val BackgroundColor = Color(0xFFF0F4F8)
 
 // ─── Animation specs (top-level = allocated once, never recreated on recompose) ──
 
-private val TaskEnterTransition = fadeIn(tween(300)) + slideInVertically(
-    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+private val TaskEnterTransition = fadeIn(tween(500)) + slideInVertically(
+    animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy ,stiffness = Spring.StiffnessVeryLow),
     initialOffsetY = { it / 2 },
 )
-private val TaskExitTransition = fadeOut(tween(200)) + slideOutVertically(
-    animationSpec = tween(200),
+private val TaskExitTransition = fadeOut(tween(500)) + slideOutVertically(
+    animationSpec = tween(500),
     targetOffsetY = { -it / 2 },
 )
 
@@ -414,7 +416,7 @@ private fun AddTaskBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = DarkGray)
+                    Text(stringResource(R.string.cancel), color = DarkGray)
                 }
 
                 Button(
@@ -423,7 +425,7 @@ private fun AddTaskBottomSheet(
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 ) {
-                    Text("Add Task", color = Color.White)
+                    Text(stringResource(R.string.add_task), color = Color.White)
                 }
             }
         }
