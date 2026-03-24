@@ -1,14 +1,23 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,16 +25,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,7 +60,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,36 +70,59 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ibrahim.to_dolist.R
+import com.ibrahim.to_dolist.animation.AnimatedPlaceholder
+import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.cardStyle.ToDoCard
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 
 private val LightGreen = Color(0xFFE0F7FA)
 private val DarkGreen = Color(0xFF00C853)
 private val DarkGray = Color(0xFF9E9E9E)
-private val BackgroundColor = Color(0xFFF0F4F8)
+private val BackgroundColor = Color(0xFFF5F5F5)
 
-// ─── Animation specs (top-level = allocated once, never recreated on recompose) ──
+// ─── Swipe thresholds ────────────────────────────────────────────────────────
 
-private val TaskEnterTransition = fadeIn(tween(300)) + slideInVertically(
-    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+private const val SWIPE_ACTION_THRESHOLD_DP = 80
+private const val SWIPE_MAX_DP = 120
+
+// ─── Animation specs ──────────────────────────────────────────────────────────
+
+private val TaskEnterTransition = fadeIn(tween(400)) + slideInVertically(
+    animationSpec = spring(
+        dampingRatio = Spring.DampingRatioHighBouncy,
+        stiffness = Spring.StiffnessVeryLow
+    ),
     initialOffsetY = { it / 2 },
 )
-private val TaskExitTransition = fadeOut(tween(200)) + slideOutVertically(
-    animationSpec = tween(200),
+
+private val TaskExitTransition = fadeOut(tween(300)) + slideOutVertically(
+    animationSpec = tween(300),
     targetOffsetY = { -it / 2 },
 )
 
@@ -102,28 +140,33 @@ fun TaskListScreen(
     val tasks by viewModel.getTasksFlow(todoId).collectAsStateWithLifecycle(emptyList())
     val scope = rememberCoroutineScope()
 
-    // Derived — no extra state, no stale data
-    val activeTasks = tasks.filter { !it.isChecked }
-    val completedTasks = tasks.filter { it.isChecked }
-
     val accentColor = remember(cardColor) {
         ToDoStickyColors.valueOf(cardColor).listColor[1]
     }
 
-    // Search state hoisted to screen level so it can filter tasks
     var searchQuery by rememberSaveable { mutableStateOf("") }
 
-    val filteredActive = remember(activeTasks, searchQuery) {
-        if (searchQuery.isBlank()) activeTasks
-        else activeTasks.filter { it.text.contains(searchQuery, ignoreCase = true) }
-    }
-    val filteredCompleted = remember(completedTasks, searchQuery) {
-        if (searchQuery.isBlank()) completedTasks
-        else completedTasks.filter { it.text.contains(searchQuery, ignoreCase = true) }
+    val (activeTasks, completedTasks) = remember(tasks, searchQuery) {
+        val active = tasks.filter { !it.isChecked }
+        val completed = tasks.filter { it.isChecked }
+
+        if (searchQuery.isBlank()) {
+            active to completed
+        } else {
+            val query = searchQuery
+            active.filter { it.text.contains(query, ignoreCase = true) } to
+                    completed.filter { it.text.contains(query, ignoreCase = true) }
+        }
     }
 
-    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // ── Dialog state for delete confirmation ────────────────────────────────
+    var taskToDelete by remember { mutableStateOf<Tasks?>(null) }
+    var showClearAllDialog by remember { mutableStateOf(false) }  // ← New state
+    var editingTask by remember { mutableStateOf<Tasks?>(null) }
+    val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    var showAddSheet by rememberSaveable { mutableStateOf(false) }
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {
@@ -135,7 +178,7 @@ fun TaskListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showBottomSheet = true },
+                onClick = { showAddSheet = true },
                 containerColor = accentColor,
                 shape = RoundedCornerShape(16.dp),
             ) {
@@ -146,106 +189,448 @@ fun TaskListScreen(
                 )
             }
         },
-        containerColor = BackgroundColor,
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                TaskSearchBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-            }
+        TaskListContent(
+            paddingValues = paddingValues,
+            activeTasks = activeTasks,
+            completedTasks = completedTasks,
+            searchQuery = searchQuery,
+            onSearchChange = { searchQuery = it },
+            accentColor = accentColor,
+            onDeleteTask = { taskToDelete = it },
+            onEditTask = { editingTask = it },
+            onClearAll = { showClearAllDialog = true },  // ← New handler
+            onCompleteTask = { task -> viewModel.updateTask(task.copy(isChecked = true)) },
+            onUncompleteTask = { task -> viewModel.updateTask(task.copy(isChecked = false)) },
+        )
+    }
 
-            // ── Active tasks ─────────────────────────────────────────────
-            item {
-                TaskSectionHeader(
-                    label = "ACTIVE TASKS",
-                    badge = "${filteredActive.size} tasks",
-                    badgeBackground = LightGreen,
-                    badgeTextColor = DarkGreen,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
+    // ── Add Task Sheet ──────────────────────────────────────────────────────
+    if (showAddSheet) {
+        AddTaskBottomSheet(
+            sheetState = addSheetState,
+            accentColor = accentColor,
+            onDismiss = { showAddSheet = false },
+            onConfirm = { text ->
+                if (text.isNotBlank()) {
+                    viewModel.addTask(todoId = todoId, text = text.trim())
+                }
+                scope.launch {
+                    addSheetState.hide()
+                }.invokeOnCompletion {
+                    showAddSheet = false
+                }
+            },
+        )
+    }
 
-            items(items = filteredActive, key = { it.id }) { task ->
-                AnimatedVisibility(
-                    visible = true,
-                    enter = TaskEnterTransition,
-                    exit = TaskExitTransition,
+    // ── Delete Single Task Dialog ───────────────────────────────────────────
+    taskToDelete?.let { task ->
+        DeleteConfirmationDialog(
+            taskTitle = task.text,
+            accentColor = accentColor,
+            onConfirm = {
+                viewModel.deleteTask(task)
+                taskToDelete = null
+            },
+            onDismiss = { taskToDelete = null },
+        )
+    }
+
+    // ── Clear All Completed Tasks Dialog ────────────────────────────────────
+    if (showClearAllDialog) {
+        ClearAllConfirmationDialog(
+            count = completedTasks.size,
+            accentColor = accentColor,
+            onConfirm = {
+                completedTasks.forEach { viewModel.deleteTask(it) }
+                showClearAllDialog = false
+            },
+            onDismiss = { showClearAllDialog = false },
+        )
+    }
+
+    // ── Edit Task Sheet ─────────────────────────────────────────────────────
+    editingTask?.let { task ->
+        EditTaskBottomSheet(
+            sheetState = editSheetState,
+            accentColor = accentColor,
+            initialText = task.text,
+            onDismiss = { editingTask = null },
+            onConfirm = { newText ->
+                if (newText.isNotBlank()) {
+                    viewModel.updateTask(task.copy(text = newText.trim()))
+                }
+                scope.launch {
+                    editSheetState.hide()
+                }.invokeOnCompletion {
+                    editingTask = null
+                }
+            },
+        )
+    }
+}
+
+// ─── TaskListContent ──────────────────────────────────────────────────────────
+
+@Composable
+private fun TaskListContent(
+    paddingValues: androidx.compose.foundation.layout.PaddingValues,
+    activeTasks: List<Tasks>,
+    completedTasks: List<Tasks>,
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    accentColor: Color,
+    onDeleteTask: (Tasks) -> Unit,
+    onEditTask: (Tasks) -> Unit,
+    onClearAll: () -> Unit,  // ← New callback
+    onCompleteTask: (Tasks) -> Unit,
+    onUncompleteTask: (Tasks) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 16.dp),
+    ) {
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            TaskSearchBar(
+                query = searchQuery,
+                onQueryChange = onSearchChange,
+                color = accentColor
+            )
+            Spacer(modifier = Modifier.height(28.dp))
+        }
+
+        item {
+            TaskSectionHeader(
+                label = "ACTIVE TASKS",
+                badge = "${activeTasks.size} tasks",
+                badgeBackground = accentColor.copy(alpha = 0.1f),
+                badgeTextColor = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        items(items = activeTasks, key = { it.id }) { task ->
+            AnimatedVisibility(
+                visible = true,
+                enter = TaskEnterTransition,
+                exit = TaskExitTransition,
+            ) {
+                SwipeableTaskCard(
+                    accentColor = accentColor,
+                    onDelete = { onDeleteTask(task) },
+                    onEdit = { onEditTask(task) },
                 ) {
                     ToDoCard(
                         title = task.text,
                         subtitle = "",
                         accentColor = accentColor,
                         isCompleted = false,
-                        onCheckedChange = { viewModel.updateTask(task.copy(isChecked = true)) },
+                        onCheckedChange = { onCompleteTask(task) },
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
+        }
 
-            // ── Completed tasks ──────────────────────────────────────────
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-                TaskSectionHeader(
-                    label = "COMPLETED",
-                    trailingAction = {
-                        if (filteredCompleted.isNotEmpty()) {
-                            TextButton(
-                                onClick = { filteredCompleted.forEach { viewModel.deleteTask(it) } },
-                            ) {
-                                Text("Clear all", color = DarkGray, fontSize = 12.sp)
-                            }
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+            TaskSectionHeader(
+                label = "COMPLETED",
+                trailingAction = {
+                    if (completedTasks.isNotEmpty()) {
+                        TextButton(
+                            onClick = { onClearAll() },  // ← Call new callback
+                        ) {
+                            Text("Clear all", color = DarkGray, fontSize = 12.sp)
                         }
-                    },
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
+                    }
+                },
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
-            items(items = filteredCompleted, key = { it.id }) { task ->
-                AnimatedVisibility(
-                    visible = true,
-                    enter = TaskEnterTransition,
-                    exit = TaskExitTransition,
+        items(items = completedTasks, key = { it.id }) { task ->
+            AnimatedVisibility(
+                visible = true,
+                enter = TaskEnterTransition,
+                exit = TaskExitTransition,
+            ) {
+                SwipeableTaskCard(
+                    accentColor = accentColor,
+                    onDelete = { onDeleteTask(task) },
+                    onEdit = { onEditTask(task) },
                 ) {
                     ToDoCard(
                         title = task.text,
                         subtitle = "",
                         accentColor = accentColor,
                         isCompleted = true,
-                        onCheckedChange = { viewModel.updateTask(task.copy(isChecked = false)) },
+                        onCheckedChange = { onUncompleteTask(task) },
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
+        }
 
-            item { Spacer(modifier = Modifier.height(80.dp)) } // FAB clearance
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+// ─── SwipeableTaskCard ────────────────────────────────────────────────────────
+
+@Composable
+private fun SwipeableTaskCard(
+    accentColor: Color,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
+    val thresholdPx = with(density) { SWIPE_ACTION_THRESHOLD_DP.dp.toPx() }
+    val maxPx = with(density) { SWIPE_MAX_DP.dp.toPx() }
+
+    val offsetX = remember { Animatable(0f) }
+    var didPassThreshold by remember { mutableStateOf(false) }
+
+    val snapSpec: SpringSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
+
+    val draggableState = rememberDraggableState { delta ->
+        scope.launch {
+            val target = (offsetX.value + delta).coerceIn(-maxPx, maxPx)
+            offsetX.snapTo(target)
+
+            val crossed = abs(target) >= thresholdPx
+            if (crossed != didPassThreshold) {
+                if (crossed) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+                didPassThreshold = crossed
+            }
         }
     }
 
-    // ── Add Task Bottom Sheet ─────────────────────────────────────────────────
-    if (showBottomSheet) {
-        AddTaskBottomSheet(
-            sheetState = sheetState,
-            accentColor = accentColor,
-            onDismiss = { showBottomSheet = false },
-            onConfirm = { text ->
-                if (text.isNotBlank()) {
-                    viewModel.addTask(todoId = todoId, text = text.trim())
-                }
-                scope.launch {
-                    sheetState.hide()
-                }.invokeOnCompletion {
-                    showBottomSheet = false
-                }
-            },
-        )
+    val swipeFraction = (abs(offsetX.value) / thresholdPx).coerceIn(0f, 1f)
+    val isSwipingRight = offsetX.value > 0f
+
+    val deleteColor = lerp(
+        accentColor.copy(alpha = 0.7f),
+        accentColor,
+        swipeFraction
+    )
+    val editColor = lerp(
+        accentColor.copy(alpha = 0.5f),
+        accentColor,
+        swipeFraction
+    )
+
+    val iconScale by animateFloatAsState(
+        targetValue = if (didPassThreshold) 1.2f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "iconScale"
+    )
+
+    val showBackground = abs(offsetX.value) > 2f
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+    ) {
+        if (showBackground) {
+            SwipeBackground(
+                color = if (isSwipingRight) deleteColor else editColor,
+                icon = if (isSwipingRight) Icons.Default.Delete else Icons.Default.Edit,
+                label = if (isSwipingRight) "Delete" else "Edit",
+                iconColor = Color.White,
+                iconScale = iconScale,
+                alignment = if (isSwipingRight) Alignment.CenterStart else Alignment.CenterEnd,
+                fraction = swipeFraction,
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .fillMaxWidth()
+                .draggable(
+                    state = draggableState,
+                    orientation = Orientation.Horizontal,
+                    onDragStopped = {
+                        scope.launch {
+                            if (abs(offsetX.value) >= thresholdPx) {
+                                if (offsetX.value > 0f) onDelete() else onEdit()
+                            }
+                            didPassThreshold = false
+                            offsetX.animateTo(0f, snapSpec)
+                        }
+                    }
+                )
+        ) {
+            content()
+        }
     }
+}
+
+// ─── SwipeBackground ─────────────────────────────────────────────────────────
+
+@Composable
+private fun SwipeBackground(
+    color: Color,
+    icon: ImageVector,
+    label: String,
+    iconColor: Color,
+    iconScale: Float,
+    alignment: Alignment,
+    fraction: Float,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .background(color, RoundedCornerShape(16.dp)),
+        contentAlignment = alignment,
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .scale(iconScale),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                color = iconColor,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+// ─── Delete Single Task Dialog ────────────────────────────────────────────────
+
+@Composable
+private fun DeleteConfirmationDialog(
+    taskTitle: String,
+    accentColor: Color,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val title = taskTitle.split(" ")[0]
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.delete_task),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "\"$title...\"",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.this_action_cannot_be_undone),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+            ) {
+                Text(stringResource(R.string.delete), color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.primary)
+            }
+        },
+    )
+}
+
+// ─── Clear All Confirmation Dialog ──────────────────────────────────────────
+
+/**
+ * Dialog to confirm clearing all completed tasks at once.
+ * Shows count of tasks to be deleted.
+ */
+@Composable
+private fun ClearAllConfirmationDialog(
+    count: Int,
+    accentColor: Color,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.clear_all),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "You are about to delete $count completed task${if (count > 1) "s" else ""}.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.this_action_cannot_be_undone),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+            ) {
+                Text(stringResource(R.string.clear_all), color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = MaterialTheme.colorScheme.primary)
+            }
+        },
+    )
 }
 
 // ─── TopBar ───────────────────────────────────────────────────────────────────
@@ -274,11 +659,7 @@ private fun TaskTopBar(
                 )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = BackgroundColor,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        modifier = Modifier.padding(top = 18.dp),
+        modifier = Modifier.padding(top = 12.dp),
     )
 }
 
@@ -288,6 +669,7 @@ private fun TaskTopBar(
 private fun TaskSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
+    color: Color
 ) {
     OutlinedTextField(
         value = query,
@@ -297,13 +679,14 @@ private fun TaskSearchBar(
         singleLine = true,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp),
+            .height(56.dp)
+            .border(1.dp, color, RoundedCornerShape(12)),
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color.Transparent,
             unfocusedBorderColor = Color.Transparent,
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
+            focusedContainerColor = color.copy(alpha = 0.3f),
+            unfocusedContainerColor = color.copy(alpha = 0.2f),
         ),
     )
 }
@@ -363,7 +746,7 @@ private fun AddTaskBottomSheet(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
 
-    val submitTask = {
+    val submit = {
         keyboard?.hide()
         onConfirm(taskText)
         taskText = ""
@@ -384,15 +767,14 @@ private fun AddTaskBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = "New Task",
+                text =stringResource(R.string.new_task),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-
             OutlinedTextField(
                 value = taskText,
                 onValueChange = { taskText = it },
-                placeholder = { Text("What needs to be done?") },
+                placeholder = { AnimatedPlaceholder(taskText) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -402,10 +784,100 @@ private fun AddTaskBottomSheet(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Done,
                 ),
-                keyboardActions = KeyboardActions(onDone = { submitTask() }),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = accentColor,
+                keyboardActions = KeyboardActions(onDone = { submit() }),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel), color = DarkGray)
+                }
+                Button(
+                    onClick = { submit() },
+                    enabled = taskText.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                ) {
+                    Text(stringResource(R.string.add_task), color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+// ─── Edit Task Bottom Sheet ───────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditTaskBottomSheet(
+    sheetState: SheetState,
+    accentColor: Color,
+    initialText: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var taskText by remember(initialText) { mutableStateOf(initialText) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+
+    val submit = {
+        keyboard?.hide()
+        onConfirm(taskText)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(accentColor.copy(alpha = 0.15f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.edit_task),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            OutlinedTextField(
+                value = taskText,
+                onValueChange = { taskText = it },
+                placeholder = { Text("Task text…") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Done,
                 ),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor),
             )
 
             Row(
@@ -414,16 +886,15 @@ private fun AddTaskBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = DarkGray)
+                    Text(stringResource(R.string.cancel), color = DarkGray)
                 }
-
                 Button(
-                    onClick = { submitTask() },
+                    onClick = { submit() },
                     enabled = taskText.isNotBlank(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 ) {
-                    Text("Add Task", color = Color.White)
+                    Text(stringResource(R.string.save), color = Color.White)
                 }
             }
         }

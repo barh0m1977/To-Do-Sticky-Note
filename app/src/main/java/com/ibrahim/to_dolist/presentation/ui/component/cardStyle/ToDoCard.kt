@@ -41,14 +41,24 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-// Top-level constants — allocated once, never re-created on recompose
-private val CardShape = RoundedCornerShape(24.dp)
+// ─── Animation & Shape Constants ───────────────────────────────────────────────
+
+private val CardShape = RoundedCornerShape(16.dp)
 private val CheckScaleSpec = spring<Float>(
     dampingRatio = Spring.DampingRatioMediumBouncy,
     stiffness = Spring.StiffnessMedium
 )
 private val ColorAnimSpec = tween<Color>(durationMillis = 300)
 
+// ─── Composable ────────────────────────────────────────────────────────────────
+
+/**
+ * A modern to-do card with:
+ * • Better color contrast: uses alpha 0.08f for softer background, accent color for accent bar
+ * • Smooth animations for completion state
+ * • Adaptive colors based on completion status
+ * • Elegant left accent bar (no washed-out look)
+ */
 @Composable
 fun ToDoCard(
     title: String,
@@ -60,11 +70,29 @@ fun ToDoCard(
 ) {
     val titleColor by animateColorAsState(
         targetValue = if (isCompleted)
-            MaterialTheme.colorScheme.onPrimaryContainer
+            MaterialTheme.colorScheme.outline
         else
             MaterialTheme.colorScheme.onSurface,
         animationSpec = ColorAnimSpec,
         label = "titleColor"
+    )
+
+    val containerColor by animateColorAsState(
+        targetValue = if (isCompleted)
+            accentColor.copy(alpha = 0.08f)
+        else
+            accentColor.copy(alpha = 0.2f),
+        animationSpec = ColorAnimSpec,
+        label = "containerColor"
+    )
+
+    val accentBarColor by animateColorAsState(
+        targetValue = if (isCompleted)
+           accentColor.copy(alpha = 0.8f)
+        else
+            accentColor.copy(alpha = 0.8f),
+        animationSpec = ColorAnimSpec,
+        label = "accentBarColor"
     )
 
     Card(
@@ -73,37 +101,43 @@ fun ToDoCard(
             .padding(vertical = 8.dp),
         shape = CardShape,
         colors = CardDefaults.cardColors(
-            containerColor = accentColor.copy(alpha = 0.12f)
+            containerColor = containerColor
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AccentBar(accentColor)
+            // ── Accent bar (vibrant & visible) ──────────────────────────────────
+            AccentBar(accentBarColor)
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
+            // ── Task content ───────────────────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
                     color = titleColor,
                     textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // ── Checkbox ───────────────────────────────────────────────────────
             CheckButton(
                 isCompleted = isCompleted,
                 accentColor = accentColor,
@@ -113,17 +147,29 @@ fun ToDoCard(
     }
 }
 
+// ─── Accent Bar Component ──────────────────────────────────────────────────────
+
+/**
+ * Left accent bar that shows the task status.
+ * Uses full accent color for active tasks, muted for completed.
+ */
 @Composable
-private fun AccentBar(accentColor: Color) {
+private fun AccentBar(color: Color) {
     Box(
         modifier = Modifier
-            .width(4.dp)
-            .height(48.dp)
-            .clip(RoundedCornerShape(50))
-            .background(accentColor.copy(alpha = 0.8f))
+            .width(3.dp)
+            .height(44.dp)
+            .clip(RoundedCornerShape(topEnd = 50F, bottomEnd = 50F))
+            .background(color)
     )
 }
 
+// ─── Check Button Component ────────────────────────────────────────────────────
+
+/**
+ * Circular checkbox with smooth scale animation on check/uncheck.
+ * Shows filled state with checkmark when completed.
+ */
 @Composable
 private fun CheckButton(
     isCompleted: Boolean,
@@ -136,34 +182,74 @@ private fun CheckButton(
         label = "checkScale"
     )
 
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isCompleted) accentColor else Color.Transparent,
+        animationSpec = ColorAnimSpec,
+        label = "backgroundColor"
+    )
+
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isCompleted) accentColor else Color.Transparent)
-            .border(width = 2.dp, color = accentColor, shape = CircleShape)
+            .background(backgroundColor)
+            .border(
+                width = 2.dp,
+                color = accentColor,
+                shape = CircleShape
+            )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = Icons.Default.Check,
             contentDescription = if (isCompleted) "Mark incomplete" else "Mark complete",
-            tint = if (isCompleted) MaterialTheme.colorScheme.onPrimary else Color.Transparent,
+            tint = if (isCompleted) Color.White else Color.Transparent,
             modifier = Modifier
-                .size(18.dp)
+                .size(16.dp)
                 .scale(checkScale),
         )
     }
 }
 
-@Preview(showBackground = true)
+// ─── Preview ──────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, backgroundColor = 0xFFF5F5F5)
 @Composable
 private fun ToDoCardPreview() {
     var isCompleted by remember { mutableStateOf(false) }
-    ToDoCard(
-        title = "Design new onboarding",
-        subtitle = "Due today · High priority",
-        isCompleted = isCompleted,
-        onCheckedChange = { isCompleted = it },
-    )
+
+    Column(
+        modifier = Modifier.padding(16.dp)
+    ) {
+        Text(
+            "Active Task",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ToDoCard(
+            title = "Design new onboarding flow",
+            subtitle = "Due today · High priority",
+            isCompleted = false,
+            onCheckedChange = { isCompleted = it },
+            accentColor = Color(0xFF448AFF),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "Completed Task",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ToDoCard(
+            title = "Review code changes",
+            subtitle = "Completed yesterday",
+            isCompleted = true,
+            onCheckedChange = { isCompleted = false },
+            accentColor = Color(0xFF00C853),
+        )
+    }
 }

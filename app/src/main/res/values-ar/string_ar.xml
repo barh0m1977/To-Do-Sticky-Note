@@ -56,7 +56,9 @@
     <string name="send_feedback">إرسال ملاحظات</string>
     <string name="privacy_policy">سياسة الخصوصية</string>
     <string name="app_version">إصدار التطبيق</string>
-
     <string name="create_task">إضافة مهمة</string>
+    <string name="add_task">إضافة مهمة</string>
+    <string name="clear_all">احذف الكل</string>
+    <string name="save">حفظ</string>
 
 </resources>

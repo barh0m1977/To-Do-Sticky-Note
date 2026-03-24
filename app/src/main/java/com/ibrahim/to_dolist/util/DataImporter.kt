@@ -16,59 +16,68 @@ import java.io.FileReader
 
 object DataImporter {
 
-    // ---------- JSON Import ----------
+    // ── JSON Import ───────────────────────────────────────────────────────────
+
     suspend fun importFromJSON(context: Context, file: File): List<ToDoWithTasks> =
         withContext(Dispatchers.IO) {
             val json = file.readText()
-            val gson = Gson()
-            val todosWithTasks: Array<ToDoWithTasks> =
-                gson.fromJson(json, Array<ToDoWithTasks>::class.java)
-            todosWithTasks.toList()
+            Gson().fromJson(json, Array<ToDoWithTasks>::class.java).toList()
         }
 
-    // ---------- CSV Import ----------
+    // ── CSV Import ────────────────────────────────────────────────────────────
+    // Uses a proper RFC 4180 parser so fields wrapped in quotes (e.g. titles
+    // that contain commas) are handled correctly.
+
     suspend fun importFromCSV(file: File): List<ToDoWithTasks> = withContext(Dispatchers.IO) {
-        val map = mutableMapOf<String, ToDoWithTasks>()
+        // Ordered map: original todoId (from file) → ToDoWithTasks being built
+        val map = linkedMapOf<String, ToDoWithTasks>()
 
         BufferedReader(FileReader(file)).use { reader ->
             reader.readLine() // skip header
+
             reader.forEachLine { line ->
-                val parts = line.split(",")
+                val parts = parseCsvLine(line)
+                // Minimum columns: ToDoID, Title, CardColor, State, Locked, CreatedAt, ModifiedAt
                 if (parts.size < 7) return@forEachLine
 
-                val todoId = parts[0].toIntOrNull() ?: 0
-                val todoTitle = parts[1]
-                val cardColorName = parts[2]
-                val stateName = parts[3]
-                val taskId = parts[4].toIntOrNull() ?: 0
-                val taskText = parts[5]
-                val taskChecked = parts[6].toBoolean()
+                val todoId       = parts[0]
+                val todoTitle    = parts[1]
+                val cardColorRaw = parts[2]
+                val stateRaw     = parts[3]
+                val lockedRaw    = parts[4]
+                // parts[5] = createdAt, parts[6] = modifiedAt — read but not reused
+                //   so that imported items always get fresh timestamps from Room
+                val taskId       = parts.getOrElse(7) { "" }
+                val taskText     = parts.getOrElse(8) { "" }
+                val taskChecked  = parts.getOrElse(9) { "false" }.toBoolean()
 
-                val todoColor = ToDoStickyColors.values().find { it.name == cardColorName }
+                val color = ToDoStickyColors.entries.find { it.name == cardColorRaw }
                     ?: ToDoStickyColors.SUNRISE
-                val todoState = ToDoState.values().find { it.name == stateName }
+                val state = ToDoState.entries.find { it.name == stateRaw }
                     ?: ToDoState.PENDING
+                val locked = lockedRaw.equals("true", ignoreCase = true)
 
-                val todoWithTasks = map.getOrPut(todoId.toString()) {
+                val entry = map.getOrPut(todoId) {
                     ToDoWithTasks(
                         todo = ToDo(
-                            id = 0, // always let Room auto-generate new ID
-                            title = todoTitle,
-                            cardColor = todoColor,
-                            state = todoState,
-                            locked = false
+                            id         = 0,           // Room will generate a new id
+                            title      = todoTitle,
+                            cardColor  = color,
+                            state      = state,
+                            locked     = locked,
+                            // createdAt/modifiedAt intentionally omitted — Room defaults apply
                         ),
-                        tasks = mutableListOf()
+                        tasks = mutableListOf(),
                     )
                 }
 
-                if (taskText.isNotEmpty()) {
-                    (todoWithTasks.tasks as MutableList).add(
+                if (taskText.isNotBlank()) {
+                    (entry.tasks as MutableList).add(
                         Tasks(
-                            id = 0, // auto-generate
-                            todoId = 0, // will be fixed after inserting ToDo
-                            text = taskText,
-                            isChecked = taskChecked
+                            id        = 0,    // Room will generate
+                            todoId    = 0,    // will be patched in importToDatabase
+                            text      = taskText,
+                            isChecked = taskChecked,
                         )
                     )
                 }
@@ -78,25 +87,66 @@ object DataImporter {
         map.values.toList()
     }
 
-    // ---------- Save to Database ----------
+    // ── Save to Database ──────────────────────────────────────────────────────
+
     /**
-     * Save a list of ToDoWithTasks into the Room database.
-     * Existing ToDos with the same ID will be replaced.
+     * Inserts all [todosWithTasks] into Room, generating new IDs for every row.
+     * The original IDs from the file are intentionally discarded to avoid
+     * primary-key conflicts with existing data.
      */
-    suspend fun importToDatabase(context: Context, todosWithTasks: List<ToDoWithTasks>) =
-        withContext(Dispatchers.IO) {
-            val db = ToDoDatabase.getDatabase(context)
-            val dao = db.toDoDao()
+    suspend fun importToDatabase(
+        context        : Context,
+        todosWithTasks : List<ToDoWithTasks>,
+    ) = withContext(Dispatchers.IO) {
+        val dao = ToDoDatabase.getDatabase(context).toDoDao()
 
-            todosWithTasks.forEach { todoWithTasks ->
-                // Insert the ToDo and get its generated ID
-                val todo = todoWithTasks.todo.copy(id = 0) // ensure Room generates new ID
-                val generatedId = dao.insertReturnId(todo)
+        todosWithTasks.forEach { todoWithTasks ->
+            // Force id = 0 so Room auto-generates a fresh primary key
+            val generatedId = dao.insertReturnId(todoWithTasks.todo.copy(id = 0))
 
-                // Insert tasks with the correct todoId
-                todoWithTasks.tasks.forEach { task ->
-                    dao.insertSubTask(task.copy(todoId = generatedId.toInt()))
-                }
+            todoWithTasks.tasks.forEach { task ->
+                dao.insertSubTask(task.copy(id = 0, todoId = generatedId.toInt()))
             }
         }
+    }
+
+    // ── RFC 4180 CSV line parser ──────────────────────────────────────────────
+    // Handles:
+    //  • Plain fields:  hello,world
+    //  • Quoted fields: "hello, world","she said ""hi"""
+    //  • Empty fields:  a,,c
+
+    private fun parseCsvLine(line: String): List<String> {
+        val result  = mutableListOf<String>()
+        val current = StringBuilder()
+        var inQuotes = false
+        var i = 0
+
+        while (i < line.length) {
+            val ch = line[i]
+            when {
+                ch == '"' && !inQuotes -> {
+                    inQuotes = true
+                }
+                ch == '"' && inQuotes -> {
+                    if (i + 1 < line.length && line[i + 1] == '"') {
+                        // Escaped double-quote inside a quoted field
+                        current.append('"')
+                        i++ // skip the second quote
+                    } else {
+                        inQuotes = false
+                    }
+                }
+                ch == ',' && !inQuotes -> {
+                    result.add(current.toString())
+                    current.clear()
+                }
+                else -> current.append(ch)
+            }
+            i++
+        }
+
+        result.add(current.toString()) // last field
+        return result
+    }
 }
