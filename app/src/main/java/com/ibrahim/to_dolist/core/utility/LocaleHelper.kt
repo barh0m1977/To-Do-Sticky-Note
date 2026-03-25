@@ -1,37 +1,27 @@
 package com.ibrahim.to_dolist.core.utility
 
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.res.Configuration
-import android.os.Build
-import androidx.activity.ComponentActivity
 import java.util.Locale
 
 object LocaleHelper {
 
-    fun setLocale(context: Context, language: String): Context {
-        val locale = Locale(language)
+    /**
+     * Returns a locale-wrapped context for resource lookups ONLY.
+     *
+     * Never calls applyOverrideConfiguration — that must be done before any
+     * resources are accessed (i.e. in attachBaseContext), so it is unsafe to
+     * call from a Composable or anywhere inside onCreate/setContent.
+     */
+    fun wrap(context: Context, languageCode: String): Context {
+        val locale = Locale(languageCode)
         Locale.setDefault(locale)
-
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
-
-        // Force layout direction for RTL/LTR
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            config.setLayoutDirection(locale)
-        }
-
         return context.createConfigurationContext(config)
-    }
-    // Helper function to find the activity
-    fun Context.findActivity(): ComponentActivity? = when (this) {
-        is ComponentActivity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
     }
 
     fun isLeesThan(text: String): Boolean {
         return text.isNotEmpty() && text.isNotBlank() && text.length <= 13
     }
-
 }

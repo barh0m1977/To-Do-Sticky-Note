@@ -1,3 +1,8 @@
+import org.gradle.kotlin.dsl.android
+import org.gradle.kotlin.dsl.kapt
+import org.gradle.kotlin.dsl.kotlinOptions
+import org.gradle.kotlin.dsl.libs
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -74,13 +79,11 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.activity.compose.v170)   // for LocalActivity
-
     implementation(libs.room.runtime)
     kapt(libs.room.compiler)
     implementation(libs.room.ktx)
     implementation(libs.androidx.material.icons.extended)
-    //admob ads
-    implementation(libs.play.services.ads)
+
     //json creation
     implementation(libs.gson)
 

@@ -63,5 +63,8 @@
     <string name="import_from">Import</string>
     <string name="create_task">Create Task</string>
     <string name="add_task">Add Task</string>
+    <string name="delete_task">Delete task?</string>
+    <string name="clear_all">Clear all</string>
+    <string name="save">Save</string>
 
 </resources>

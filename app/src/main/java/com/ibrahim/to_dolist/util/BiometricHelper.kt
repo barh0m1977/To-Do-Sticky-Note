@@ -1,47 +1,49 @@
 package com.ibrahim.to_dolist.util
 
 import android.content.Context
+import android.content.ContextWrapper
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 
+fun Context.findFragmentActivity(): androidx.fragment.app.FragmentActivity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is androidx.fragment.app.FragmentActivity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
 class BiometricHelper(
     private val context: Context,
     private val onSuccess: () -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
 ) {
     fun authenticate() {
-
-        val activity = context as? FragmentActivity ?:run{
-        onError("Biometric requires FragmentActivity")
+        // Use the extension to find the Activity
+        val activity = context.findFragmentActivity() ?: run {
+            onError("Biometric requires an Activity context")
             return
         }
         val executor = ContextCompat.getMainExecutor(activity)
         val prompt = BiometricPrompt(
-            activity,
+            activity ,
             executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     onSuccess()
                 }
-
                 override fun onAuthenticationError(code: Int, msg: CharSequence) {
-                    onError("Error: $msg")
-                }
-
-                override fun onAuthenticationFailed() {
-                    onError("Fingerprint not recognized")
+                    onError(msg.toString())
                 }
             }
         )
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Confirm Fingerprint")
-            .setSubtitle("Use fingerprint to continue")
+            .setTitle("Authentication Required")
+            .setSubtitle("Confirm your identity to continue")
             .setNegativeButtonText("Cancel")
             .build()
+
         prompt.authenticate(promptInfo)
-
-
     }
 }
