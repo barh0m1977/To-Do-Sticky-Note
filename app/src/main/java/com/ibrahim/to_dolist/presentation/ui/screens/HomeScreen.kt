@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,11 +46,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
 import com.ibrahim.to_dolist.MainActivity
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.data.model.ToDoState
@@ -239,12 +235,7 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActiv
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Banner Ad
-            BannerAd(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            )
+
             ToDoListScreen(
                 viewModel,
                 modifier = Modifier,
@@ -278,18 +269,3 @@ fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActiv
     }
 
 }
-@Composable
-fun BannerAd(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    AndroidView(
-        modifier = modifier,
-        factory = {
-            AdView(context).apply {
-                adUnitId = "ca-app-pub-8333272977511600/7589163981"
-                setAdSize(com.google.android.gms.ads.AdSize.BANNER)
-                loadAd(AdRequest.Builder().build())
-            }
-        }
-    )
-}
-

@@ -16,7 +16,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import com.google.android.gms.ads.MobileAds
 import com.ibrahim.to_dolist.core.utility.LocaleHelper
 import com.ibrahim.to_dolist.data.settings.SettingsManager
 import com.ibrahim.to_dolist.data.settings.SettingsRepository
@@ -26,9 +25,6 @@ import com.ibrahim.to_dolist.presentation.ui.screens.settings.ImportFormat
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsViewModel
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
 
@@ -91,9 +87,7 @@ class MainActivity : FragmentActivity() {
             enableEdgeToEdge()
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            MobileAds.initialize(this@MainActivity) {}
-        }
+     
 
         setContent {
             val language by settingsViewModel.language.collectAsState()

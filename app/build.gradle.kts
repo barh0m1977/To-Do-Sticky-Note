@@ -1,3 +1,8 @@
+import com.android.build.gradle.ProguardFiles.getDefaultProguardFile
+import org.gradle.kotlin.dsl.android
+import org.gradle.kotlin.dsl.kapt
+import org.gradle.kotlin.dsl.libs
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -72,15 +77,13 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-//    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.biometric)
     implementation(libs.androidx.activity.compose.v170)   // for LocalActivity
-    implementation("androidx.biometric:biometric:1.2.0-alpha05") // or stable 1.1.0+ with ComponentActivity support
     implementation(libs.room.runtime)
     kapt(libs.room.compiler)
     implementation(libs.room.ktx)
     implementation(libs.androidx.material.icons.extended)
-    //admob ads
-    implementation(libs.play.services.ads)
+
     //json creation
     implementation(libs.gson)
 
