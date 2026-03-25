@@ -1,6 +1,10 @@
 package com.ibrahim.to_dolist.data.model
 
-import androidx.room.*
+import androidx.compose.runtime.Immutable
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "tasks",
@@ -12,6 +16,7 @@ import androidx.room.*
     )],
     indices = [Index("todoId")]
 )
+@Immutable
 data class Tasks(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,

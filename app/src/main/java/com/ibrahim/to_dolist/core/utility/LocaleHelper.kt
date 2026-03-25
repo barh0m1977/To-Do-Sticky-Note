@@ -22,6 +22,6 @@ object LocaleHelper {
     }
 
     fun isLeesThan(text: String): Boolean {
-        return text.isNotEmpty() && text.isNotBlank() && text.length <= 13
+        return text.isNotEmpty() && text.isNotBlank() && text.length <= 25
     }
 }

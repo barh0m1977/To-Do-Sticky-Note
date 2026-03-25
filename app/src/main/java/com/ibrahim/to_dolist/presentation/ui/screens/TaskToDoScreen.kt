@@ -19,8 +19,10 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -287,6 +289,7 @@ private fun TaskListContent(
     onCompleteTask: (Tasks) -> Unit,
     onUncompleteTask: (Tasks) -> Unit,
 ) {
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -305,7 +308,7 @@ private fun TaskListContent(
 
         item {
             TaskSectionHeader(
-                label = "ACTIVE TASKS",
+                label = stringResource(R.string.active_tasks),
                 badge = "${activeTasks.size} tasks",
                 badgeBackground = accentColor.copy(alpha = 0.1f),
                 badgeTextColor = MaterialTheme.colorScheme.primary,
@@ -339,13 +342,13 @@ private fun TaskListContent(
         item {
             Spacer(modifier = Modifier.height(20.dp))
             TaskSectionHeader(
-                label = "COMPLETED",
+                label = stringResource(R.string.completed),
                 trailingAction = {
                     if (completedTasks.isNotEmpty()) {
                         TextButton(
                             onClick = { onClearAll() },  // ← Call new callback
                         ) {
-                            Text("Clear all", color = DarkGray, fontSize = 12.sp)
+                            Text(stringResource(R.string.clear_all), color = DarkGray, fontSize = 12.sp)
                         }
                     }
                 },
@@ -444,6 +447,7 @@ private fun SwipeableTaskCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(16.dp))
     ) {
         if (showBackground) {
@@ -496,7 +500,7 @@ private fun SwipeBackground(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .fillMaxHeight()
             .background(color, RoundedCornerShape(16.dp)),
         contentAlignment = alignment,
     ) {
@@ -627,7 +631,7 @@ private fun ClearAllConfirmationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.primary)
             }
         },
     )
@@ -674,7 +678,7 @@ private fun TaskSearchBar(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text("Search tasks...") },
+        placeholder = { Text(stringResource(R.string.search_tasks)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         singleLine = true,
         modifier = Modifier

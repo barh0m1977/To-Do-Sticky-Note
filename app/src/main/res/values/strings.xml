@@ -66,5 +66,8 @@
     <string name="delete_task">Delete task?</string>
     <string name="clear_all">Clear all</string>
     <string name="save">Save</string>
+    <string name="search_tasks">Search tasks...</string>
+    <string name="completed">COMPLETED</string>
+    <string name="active_tasks">ACTIVE TASKS</string>
 
 </resources>
