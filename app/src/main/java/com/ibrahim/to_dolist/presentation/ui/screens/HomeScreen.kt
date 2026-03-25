@@ -1,7 +1,5 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,20 +36,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 import com.ibrahim.to_dolist.MainActivity
 import com.ibrahim.to_dolist.R
-import com.ibrahim.to_dolist.data.model.ToDoState
-import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.TaskSheet
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoListScreen
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
@@ -70,21 +63,9 @@ fun ToDoTopBar(
     onSortDirectionChanged: (SortDirection) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
-    // Helper to find activity safely
-    fun Context.findActivity(): FragmentActivity? {
-        var ctx = this
-        while (ctx is ContextWrapper) {
-            if (ctx is FragmentActivity) return ctx
-            ctx = ctx.baseContext
-        }
-        return null
-    }
 
-    val activity = rememberUpdatedState(context.findActivity())
 
-//    var interstitialAd = rememberInterstitialAd(activity as Activity, "ca-app-pub-8333272977511600/1167511275")
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -197,15 +178,6 @@ fun ToDoTopBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: ToDoViewModel, navController: NavController, mainActivity: MainActivity) {
-    var showDialog by rememberSaveable { mutableStateOf(false) }
-    var text by rememberSaveable { mutableStateOf("") }
-    var colorVal by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
-    var selectedColor by rememberSaveable { mutableStateOf(ToDoStickyColors.SUNRISE) }
-    var selectedState by rememberSaveable { mutableStateOf(ToDoState.PENDING) }
-    var isLocked by rememberSaveable { mutableStateOf(false) }
-    var isChecked by rememberSaveable { mutableStateOf(false) }
-    val context = LocalContext.current
-    var showAd by remember { mutableStateOf(false) }
 
 
     val sheetState = rememberModalBottomSheetState(

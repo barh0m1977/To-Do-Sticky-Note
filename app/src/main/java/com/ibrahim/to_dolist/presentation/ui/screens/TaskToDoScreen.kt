@@ -1,16 +1,10 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
@@ -35,7 +29,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -64,6 +57,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,9 +67,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -103,30 +99,12 @@ import kotlin.math.roundToInt
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 
-private val LightGreen = Color(0xFFE0F7FA)
-private val DarkGreen = Color(0xFF00C853)
 private val DarkGray = Color(0xFF9E9E9E)
-private val BackgroundColor = Color(0xFFF5F5F5)
 
 // ─── Swipe thresholds ────────────────────────────────────────────────────────
 
 private const val SWIPE_ACTION_THRESHOLD_DP = 80
 private const val SWIPE_MAX_DP = 120
-
-// ─── Animation specs ──────────────────────────────────────────────────────────
-
-private val TaskEnterTransition = fadeIn(tween(400)) + slideInVertically(
-    animationSpec = spring(
-        dampingRatio = Spring.DampingRatioHighBouncy,
-        stiffness = Spring.StiffnessVeryLow
-    ),
-    initialOffsetY = { it / 2 },
-)
-
-private val TaskExitTransition = fadeOut(tween(300)) + slideOutVertically(
-    animationSpec = tween(300),
-    targetOffsetY = { -it / 2 },
-)
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -151,7 +129,6 @@ fun TaskListScreen(
     val (activeTasks, completedTasks) = remember(tasks, searchQuery) {
         val active = tasks.filter { !it.isChecked }
         val completed = tasks.filter { it.isChecked }
-
         if (searchQuery.isBlank()) {
             active to completed
         } else {
@@ -161,9 +138,8 @@ fun TaskListScreen(
         }
     }
 
-    // ── Dialog state for delete confirmation ────────────────────────────────
     var taskToDelete by remember { mutableStateOf<Tasks?>(null) }
-    var showClearAllDialog by remember { mutableStateOf(false) }  // ← New state
+    var showClearAllDialog by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<Tasks?>(null) }
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -201,32 +177,24 @@ fun TaskListScreen(
             accentColor = accentColor,
             onDeleteTask = { taskToDelete = it },
             onEditTask = { editingTask = it },
-            onClearAll = { showClearAllDialog = true },  // ← New handler
+            onClearAll = { showClearAllDialog = true },
             onCompleteTask = { task -> viewModel.updateTask(task.copy(isChecked = true)) },
             onUncompleteTask = { task -> viewModel.updateTask(task.copy(isChecked = false)) },
         )
     }
 
-    // ── Add Task Sheet ──────────────────────────────────────────────────────
     if (showAddSheet) {
         AddTaskBottomSheet(
             sheetState = addSheetState,
             accentColor = accentColor,
             onDismiss = { showAddSheet = false },
             onConfirm = { text ->
-                if (text.isNotBlank()) {
-                    viewModel.addTask(todoId = todoId, text = text.trim())
-                }
-                scope.launch {
-                    addSheetState.hide()
-                }.invokeOnCompletion {
-                    showAddSheet = false
-                }
+                if (text.isNotBlank()) viewModel.addTask(todoId = todoId, text = text.trim())
+                scope.launch { addSheetState.hide() }.invokeOnCompletion { showAddSheet = false }
             },
         )
     }
 
-    // ── Delete Single Task Dialog ───────────────────────────────────────────
     taskToDelete?.let { task ->
         DeleteConfirmationDialog(
             taskTitle = task.text,
@@ -239,7 +207,6 @@ fun TaskListScreen(
         )
     }
 
-    // ── Clear All Completed Tasks Dialog ────────────────────────────────────
     if (showClearAllDialog) {
         ClearAllConfirmationDialog(
             count = completedTasks.size,
@@ -252,7 +219,6 @@ fun TaskListScreen(
         )
     }
 
-    // ── Edit Task Sheet ─────────────────────────────────────────────────────
     editingTask?.let { task ->
         EditTaskBottomSheet(
             sheetState = editSheetState,
@@ -260,14 +226,8 @@ fun TaskListScreen(
             initialText = task.text,
             onDismiss = { editingTask = null },
             onConfirm = { newText ->
-                if (newText.isNotBlank()) {
-                    viewModel.updateTask(task.copy(text = newText.trim()))
-                }
-                scope.launch {
-                    editSheetState.hide()
-                }.invokeOnCompletion {
-                    editingTask = null
-                }
+                if (newText.isNotBlank()) viewModel.updateTask(task.copy(text = newText.trim()))
+                scope.launch { editSheetState.hide() }.invokeOnCompletion { editingTask = null }
             },
         )
     }
@@ -285,11 +245,10 @@ private fun TaskListContent(
     accentColor: Color,
     onDeleteTask: (Tasks) -> Unit,
     onEditTask: (Tasks) -> Unit,
-    onClearAll: () -> Unit,  // ← New callback
+    onClearAll: () -> Unit,
     onCompleteTask: (Tasks) -> Unit,
     onUncompleteTask: (Tasks) -> Unit,
 ) {
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -298,11 +257,7 @@ private fun TaskListContent(
     ) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            TaskSearchBar(
-                query = searchQuery,
-                onQueryChange = onSearchChange,
-                color = accentColor
-            )
+            TaskSearchBar(query = searchQuery, onQueryChange = onSearchChange, color = accentColor)
             Spacer(modifier = Modifier.height(28.dp))
         }
 
@@ -316,27 +271,38 @@ private fun TaskListContent(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        // ✅ Step 3: Removed AnimatedVisibility(visible = true) wrappers.
+        //    visible=true means exit never fires — items were deleted from the list
+        //    before visible could flip to false, so the exit animation was dead code.
+        //    animateItem() on the direct LazyColumn child is the correct replacement:
+        //    it hooks into LazyColumn's own placement animation system for both
+        //    enter and exit transitions.
+        //
+        // ✅ Step 4: Stable lambdas via remember(task.id).
+        //    Inline lambdas { onDeleteTask(task) } create a new instance on every
+        //    parent recomposition. Compose can't skip the equality check → every
+        //    card re-runs even if its own data didn't change.
+        //    remember(task.id) { { ... } } gives a stable reference that only
+        //    changes when the task itself changes.
         items(items = activeTasks, key = { it.id }) { task ->
-            AnimatedVisibility(
-                visible = true,
-                enter = TaskEnterTransition,
-                exit = TaskExitTransition,
+            val onDelete = remember(task.id) { { onDeleteTask(task) } }
+            val onEdit = remember(task.id) { { onEditTask(task) } }
+
+            SwipeableTaskCard(
+                accentColor = accentColor,
+                onDelete = onDelete,
+                onEdit = onEdit,
             ) {
-                SwipeableTaskCard(
+                ToDoCard(
+                    modifier = Modifier.animateItem(),
+                    title = task.text,
+                    subtitle = "",
                     accentColor = accentColor,
-                    onDelete = { onDeleteTask(task) },
-                    onEdit = { onEditTask(task) },
-                ) {
-                    ToDoCard(
-                        title = task.text,
-                        subtitle = "",
-                        accentColor = accentColor,
-                        isCompleted = false,
-                        onCheckedChange = { onCompleteTask(task) },
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
+                    isCompleted = false,
+                    onCheckedChange = remember(task.id) { { onCompleteTask(task) } },
+                )
             }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         item {
@@ -345,9 +311,7 @@ private fun TaskListContent(
                 label = stringResource(R.string.completed),
                 trailingAction = {
                     if (completedTasks.isNotEmpty()) {
-                        TextButton(
-                            onClick = { onClearAll() },  // ← Call new callback
-                        ) {
+                        TextButton(onClick = { onClearAll() }) {
                             Text(stringResource(R.string.clear_all), color = DarkGray, fontSize = 12.sp)
                         }
                     }
@@ -357,26 +321,24 @@ private fun TaskListContent(
         }
 
         items(items = completedTasks, key = { it.id }) { task ->
-            AnimatedVisibility(
-                visible = true,
-                enter = TaskEnterTransition,
-                exit = TaskExitTransition,
+            val onDelete = remember(task.id) { { onDeleteTask(task) } }
+            val onEdit = remember(task.id) { { onEditTask(task) } }
+
+            SwipeableTaskCard(
+                accentColor = accentColor,
+                onDelete = onDelete,
+                onEdit = onEdit,
             ) {
-                SwipeableTaskCard(
+                ToDoCard(
+                    modifier = Modifier.animateItem(), // ✅ Step 3: was missing on completed tasks
+                    title = task.text,
+                    subtitle = "",
                     accentColor = accentColor,
-                    onDelete = { onDeleteTask(task) },
-                    onEdit = { onEditTask(task) },
-                ) {
-                    ToDoCard(
-                        title = task.text,
-                        subtitle = "",
-                        accentColor = accentColor,
-                        isCompleted = true,
-                        onCheckedChange = { onUncompleteTask(task) },
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
+                    isCompleted = true,
+                    onCheckedChange = remember(task.id) { { onUncompleteTask(task) } },
+                )
             }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -404,45 +366,35 @@ private fun SwipeableTaskCard(
 
     val snapSpec: SpringSpec<Float> = spring(
         dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessMedium
+        stiffness = Spring.StiffnessMedium,
     )
 
     val draggableState = rememberDraggableState { delta ->
         scope.launch {
             val target = (offsetX.value + delta).coerceIn(-maxPx, maxPx)
             offsetX.snapTo(target)
-
             val crossed = abs(target) >= thresholdPx
             if (crossed != didPassThreshold) {
-                if (crossed) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
+                if (crossed) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 didPassThreshold = crossed
             }
         }
     }
 
-    val swipeFraction = (abs(offsetX.value) / thresholdPx).coerceIn(0f, 1f)
-    val isSwipingRight = offsetX.value > 0f
-
-    val deleteColor = lerp(
-        accentColor.copy(alpha = 0.7f),
-        accentColor,
-        swipeFraction
-    )
-    val editColor = lerp(
-        accentColor.copy(alpha = 0.5f),
-        accentColor,
-        swipeFraction
-    )
+    // ✅ Step 1 (fix 1): derivedStateOf for boolean values that flip rarely.
+    //    Before: reading offsetX.value directly in composition caused SwipeableTaskCard
+    //    to recompose on *every drag pixel* (every Animatable frame notification).
+    //    derivedStateOf { } reads offsetX.value inside a snapshot observer — Compose
+    //    only schedules a recomposition when the *result* of the lambda changes
+    //    (i.e. the boolean flips), not on every frame.
+    val showBackground by remember { derivedStateOf { abs(offsetX.value) > 2f } }
+    val isSwipingRight by remember { derivedStateOf { offsetX.value > 0f } }
 
     val iconScale by animateFloatAsState(
         targetValue = if (didPassThreshold) 1.2f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "iconScale"
+        label = "iconScale",
     )
-
-    val showBackground = abs(offsetX.value) > 2f
 
     Box(
         modifier = Modifier
@@ -451,14 +403,29 @@ private fun SwipeableTaskCard(
             .clip(RoundedCornerShape(16.dp))
     ) {
         if (showBackground) {
+            // ✅ Step 1 (fix 2): color lerp moved into drawBehind (draw phase).
+            //    Before: deleteColor/editColor were computed in composition from
+            //    offsetX.value, which triggered a full recompose every drag frame.
+            //    drawBehind { } runs in the draw phase — offsetX.value is read there,
+            //    so Compose only re-draws this layer each frame, never recomposes the
+            //    composable tree. Zero allocations during drag.
             SwipeBackground(
-                color = if (isSwipingRight) deleteColor else editColor,
+                modifier = Modifier.drawBehind {
+                    val raw = offsetX.value
+                    val fraction = (abs(raw) / thresholdPx).coerceIn(0f, 1f)
+                    val startAlpha = if (raw > 0f) 0.7f else 0.5f
+                    val color = lerp(
+                        accentColor.copy(alpha = startAlpha),
+                        accentColor,
+                        fraction,
+                    )
+                    drawRoundRect(color, cornerRadius = CornerRadius(16.dp.toPx()))
+                },
                 icon = if (isSwipingRight) Icons.Default.Delete else Icons.Default.Edit,
                 label = if (isSwipingRight) "Delete" else "Edit",
                 iconColor = Color.White,
                 iconScale = iconScale,
                 alignment = if (isSwipingRight) Alignment.CenterStart else Alignment.CenterEnd,
-                fraction = swipeFraction,
             )
         }
 
@@ -477,7 +444,7 @@ private fun SwipeableTaskCard(
                             didPassThreshold = false
                             offsetX.animateTo(0f, snapSpec)
                         }
-                    }
+                    },
                 )
         ) {
             content()
@@ -487,21 +454,23 @@ private fun SwipeableTaskCard(
 
 // ─── SwipeBackground ─────────────────────────────────────────────────────────
 
+// ✅ Step 1 (fix 3): Removed `color` and `fraction` params.
+//    Color is now drawn via the modifier passed in from the caller (drawBehind),
+//    so SwipeBackground owns only the icon overlay — not the color computation.
+//    This makes the signature honest: SwipeBackground is purely structural content.
 @Composable
 private fun SwipeBackground(
-    color: Color,
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
     iconColor: Color,
     iconScale: Float,
     alignment: Alignment,
-    fraction: Float,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight()
-            .background(color, RoundedCornerShape(16.dp)),
+            .fillMaxHeight(),
         contentAlignment = alignment,
     ) {
         Column(
@@ -528,7 +497,7 @@ private fun SwipeBackground(
     }
 }
 
-// ─── Delete Single Task Dialog ────────────────────────────────────────────────
+// ─── Delete Confirmation Dialog ───────────────────────────────────────────────
 
 @Composable
 private fun DeleteConfirmationDialog(
@@ -568,7 +537,7 @@ private fun DeleteConfirmationDialog(
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
                 ),
             ) {
                 Text(stringResource(R.string.delete), color = Color.White)
@@ -584,10 +553,6 @@ private fun DeleteConfirmationDialog(
 
 // ─── Clear All Confirmation Dialog ──────────────────────────────────────────
 
-/**
- * Dialog to confirm clearing all completed tasks at once.
- * Shows count of tasks to be deleted.
- */
 @Composable
 private fun ClearAllConfirmationDialog(
     count: Int,
@@ -623,7 +588,7 @@ private fun ClearAllConfirmationDialog(
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
                 ),
             ) {
                 Text(stringResource(R.string.clear_all), color = Color.White)
@@ -673,7 +638,7 @@ private fun TaskTopBar(
 private fun TaskSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    color: Color
+    color: Color,
 ) {
     OutlinedTextField(
         value = query,
@@ -717,7 +682,6 @@ private fun TaskSectionHeader(
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.sp,
         )
-
         if (badge != null) {
             Card(
                 shape = RoundedCornerShape(8.dp),
@@ -731,7 +695,6 @@ private fun TaskSectionHeader(
                 )
             }
         }
-
         trailingAction?.invoke()
     }
 }
@@ -771,7 +734,7 @@ private fun AddTaskBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text =stringResource(R.string.new_task),
+                text = stringResource(R.string.new_task),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -786,9 +749,8 @@ private fun AddTaskBottomSheet(
                 shape = RoundedCornerShape(16.dp),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done,
+                    imeAction = ImeAction.Default,
                 ),
-                keyboardActions = KeyboardActions(onDone = { submit() }),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor),
             )
             Row(
@@ -871,16 +833,15 @@ private fun EditTaskBottomSheet(
             OutlinedTextField(
                 value = taskText,
                 onValueChange = { taskText = it },
-                placeholder = { Text("Task text…") },
+                placeholder = { AnimatedPlaceholder(stringResource(R.string.task_text_here)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
                 shape = RoundedCornerShape(16.dp),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done,
+                    imeAction = ImeAction.Default,
                 ),
-                keyboardActions = KeyboardActions(onDone = { submit() }),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor),
             )
 

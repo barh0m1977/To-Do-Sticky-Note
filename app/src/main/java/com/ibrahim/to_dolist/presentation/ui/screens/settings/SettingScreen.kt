@@ -73,9 +73,8 @@ import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import com.ibrahim.to_dolist.util.getAppVersion
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
-private val SurfaceVariant = Color(0xFFF5F5F5)
-private val SuccessGreen   = Color(0xFF00C853)
-private val ErrorRed       = Color(0xFFD50000)
+private val SuccessGreen = Color(0xFF00C853)
+private val ErrorRed     = Color(0xFFD50000)
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -85,14 +84,12 @@ fun SettingsScreen(
     navController   : NavController,
     viewModel       : SettingsViewModel,
     todoViewModel   : ToDoViewModel,
-    // ← The file launcher lives in AppNavGraph (Activity level).
-    //   SettingsScreen just calls this callback when it needs a file.
     onRequestImport : (ImportFormat) -> Unit,
 ) {
     val language       by viewModel.language.collectAsState()
     val theme          by viewModel.theme.collectAsState()
-    val exportStatus   by viewModel.exportStatus.collectAsState()
     val importState    by viewModel.importState.collectAsState()
+    val exportState    by viewModel.exportState.collectAsState()       // ✅ ExportState, not File?
     val context        = LocalContext.current
     val version        = getAppVersion(context)
     val todosWithTasks by todoViewModel.todosWithTasks.collectAsState()
@@ -101,31 +98,50 @@ fun SettingsScreen(
     var selectedImportFormat by remember { mutableStateOf(ImportFormat.CSV) }
     var selectedExportFormat by remember { mutableStateOf(ExportFormat.CSV) }
 
-
-    // ── Snackbar: export completion ───────────────────────────────────────────
-    LaunchedEffect(exportStatus) {
-        exportStatus?.let { file ->
-            snackbarHost.showSnackbar("✓ Exported: ${file.name}", duration = SnackbarDuration.Short)
-            viewModel.clearExportStatus()
+    // ── Snackbar: export state ────────────────────────────────────────────────
+    LaunchedEffect(exportState) {
+        when (val s = exportState) {
+            is ExportState.Success -> {
+                snackbarHost.showSnackbar(
+                    "✓ Exported: ${s.file.name}",
+                    duration = SnackbarDuration.Short,
+                )
+                viewModel.clearExportState()
+            }
+            is ExportState.Error -> {
+                snackbarHost.showSnackbar(
+                    "Export failed: ${s.message}",
+                    duration = SnackbarDuration.Long,
+                )
+                viewModel.clearExportState()
+            }
+            is ExportState.Loading, ExportState.Idle -> Unit
         }
     }
 
-    // ── Snackbar: import result ───────────────────────────────────────────────
+    // ── Snackbar: import state ────────────────────────────────────────────────
     LaunchedEffect(importState) {
         when (val s = importState) {
             is ImportState.Success -> {
-                snackbarHost.showSnackbar("✓ Imported ${s.count} todo(s)", duration = SnackbarDuration.Short)
+                // ✅ Use the rich ImportResult message instead of a raw count
+                snackbarHost.showSnackbar(
+                    "✓ ${s.result.toMessage()}",
+                    duration = SnackbarDuration.Long,
+                )
                 viewModel.clearImportState()
             }
             is ImportState.Error -> {
-                snackbarHost.showSnackbar("Import failed: ${s.message}", duration = SnackbarDuration.Long)
+                snackbarHost.showSnackbar(
+                    "Import failed: ${s.message}",
+                    duration = SnackbarDuration.Long,
+                )
                 viewModel.clearImportState()
             }
-            else -> Unit
+            is ImportState.Loading, ImportState.Idle -> Unit
         }
     }
 
-    // ── Events (feedback / privacy policy URLs) ───────────────────────────────
+    // ── Events (feedback / privacy policy) ───────────────────────────────────
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             event?.let {
@@ -193,18 +209,38 @@ fun SettingsScreen(
                 SettingsGroup {
                     DropdownSettingRow(
                         title    = stringResource(R.string.export),
-                        subtitle = "Save as ${selectedExportFormat.name}",
+                        // ✅ Reflect ExportState in the subtitle
+                        subtitle = when (exportState) {
+                            is ExportState.Loading -> "Exporting…"
+                            is ExportState.Success -> "Exported: ${(exportState as ExportState.Success).file.name}"
+                            is ExportState.Error   -> "Failed — tap to retry"
+                            ExportState.Idle       -> "Save as ${selectedExportFormat.name}"
+                        },
                         icon     = Icons.Default.IosShare,
                         options  = ExportFormat.entries.map { it.name },
                         isLast   = false,
-                        trailingContent = { FormatBadge(selectedExportFormat.name) },
+                        trailingContent = {
+                            // ✅ Show spinner during export, badge otherwise
+                            when (exportState) {
+                                is ExportState.Loading -> CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp), strokeWidth = 2.dp,
+                                )
+                                is ExportState.Error -> Icon(
+                                    Icons.Default.Error, null,
+                                    tint = ErrorRed, modifier = Modifier.size(20.dp),
+                                )
+                                is ExportState.Success -> Icon(
+                                    Icons.Default.CheckCircle, null,
+                                    tint = SuccessGreen, modifier = Modifier.size(20.dp),
+                                )
+                                ExportState.Idle -> FormatBadge(selectedExportFormat.name)
+                            }
+                        },
                     ) { selected ->
                         selectedExportFormat = ExportFormat.valueOf(selected)
                         viewModel.exportTasks(context, todosWithTasks, selectedExportFormat)
                     }
 
-                    // Import row — calls onRequestImport which triggers the
-                    // launcher that lives safely in AppNavGraph.
                     ImportSettingRow(
                         selectedFormat = selectedImportFormat,
                         importState    = importState,
@@ -252,21 +288,152 @@ fun SettingsScreen(
     }
 }
 
-// ─── Section label ────────────────────────────────────────────────────────────
+// ─── Import row ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun ImportSettingRow(
+    selectedFormat : ImportFormat,
+    importState    : ImportState,
+    onFormatPicked : (String) -> Unit,
+    onLaunchPicker : () -> Unit,
+    isLast         : Boolean,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val isLoading = importState is ImportState.Loading
+
+    // Auto-collapse once a result arrives so the row feels responsive
+    LaunchedEffect(importState) {
+        if (importState is ImportState.Success || importState is ImportState.Error) {
+            expanded = false
+        }
+    }
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !isLoading) {
+                    if (expanded) { expanded = false; onLaunchPicker() }
+                    else expanded = true
+                }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconContainer(Icons.Default.GetApp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.import_from), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = when (val s = importState) {
+                        is ImportState.Loading -> "Importing…"
+                        // ✅ Show the rich result summary in the subtitle
+                        is ImportState.Success -> "✓ ${s.result.toMessage()}"
+                        is ImportState.Error   -> "Failed — tap to retry"
+                        ImportState.Idle       -> "Pick ${selectedFormat.name} file"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when (importState) {
+                        is ImportState.Error   -> ErrorRed
+                        is ImportState.Success -> SuccessGreen
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            // Trailing icon reflects current state
+            when (importState) {
+                is ImportState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp), strokeWidth = 2.dp,
+                )
+                is ImportState.Success -> Icon(
+                    Icons.Default.CheckCircle, null,
+                    tint = SuccessGreen, modifier = Modifier.size(20.dp),
+                )
+                is ImportState.Error -> Icon(
+                    Icons.Default.Error, null,
+                    tint = ErrorRed, modifier = Modifier.size(20.dp),
+                )
+                ImportState.Idle -> Icon(
+                    imageVector        = if (expanded) Icons.Default.KeyboardArrowUp
+                    else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier.size(20.dp),
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = expanded && !isLoading,
+            enter   = expandVertically(tween(200)) + fadeIn(tween(200)),
+            exit    = shrinkVertically(tween(180)) + fadeOut(tween(180)),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(vertical = 4.dp),
+            ) {
+                ImportFormat.entries.forEach { format ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFormatPicked(format.name) }
+                            .padding(horizontal = 54.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            format.name,
+                            style    = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (format == selectedFormat) {
+                            Icon(
+                                Icons.Default.CheckCircle, null,
+                                tint     = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+                // CTA
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 54.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .clickable { expanded = false; onLaunchPicker() }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "Choose ${selectedFormat.name} file →",
+                        style      = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+
+        if (!isLast) RowDivider()
+    }
+}
+
+// ─── Shared small composables ─────────────────────────────────────────────────
 
 @Composable
 private fun SectionLabel(text: String) {
     Text(
-        text       = text.uppercase(),
-        style      = MaterialTheme.typography.labelSmall,
-        color      = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Bold,
+        text          = text.uppercase(),
+        style         = MaterialTheme.typography.labelSmall,
+        color         = MaterialTheme.colorScheme.primary,
+        fontWeight    = FontWeight.Bold,
         letterSpacing = 1.2.sp,
-        modifier   = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
+        modifier      = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
     )
 }
-
-// ─── Settings group card ──────────────────────────────────────────────────────
 
 @Composable
 private fun SettingsGroup(content: @Composable () -> Unit) {
@@ -277,8 +444,6 @@ private fun SettingsGroup(content: @Composable () -> Unit) {
         modifier  = Modifier.fillMaxWidth(),
     ) { content() }
 }
-
-// ─── Plain row ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun PlainSettingRow(
@@ -313,8 +478,6 @@ private fun PlainSettingRow(
     }
 }
 
-// ─── Dropdown row ─────────────────────────────────────────────────────────────
-
 @Composable
 private fun DropdownSettingRow(
     title           : String,
@@ -347,15 +510,14 @@ private fun DropdownSettingRow(
             }
             trailingContent?.invoke()
             Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp
+                imageVector        = if (expanded) Icons.Default.KeyboardArrowUp
                 else Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier           = Modifier.size(20.dp),
             )
         }
 
-        // Inline expanding list — avoids DropdownMenu z-index issues in LazyColumn
         AnimatedVisibility(
             visible = expanded,
             enter   = expandVertically(tween(200)) + fadeIn(tween(200)),
@@ -384,140 +546,9 @@ private fun DropdownSettingRow(
     }
 }
 
-// ─── Import row ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun ImportSettingRow(
-    selectedFormat : ImportFormat,
-    importState    : ImportState,
-    onFormatPicked : (String) -> Unit,
-    onLaunchPicker : () -> Unit,
-    isLast         : Boolean,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val isLoading = importState is ImportState.Loading
-
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = !isLoading) {
-                    if (expanded) {
-                        expanded = false
-                        onLaunchPicker()
-                    } else {
-                        expanded = true
-                    }
-                }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconContainer(Icons.Default.GetApp)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.import_from), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    text = when (importState) {
-                        is ImportState.Loading -> "Importing…"
-                        is ImportState.Success -> "Last: ${importState.count} item(s) imported"
-                        is ImportState.Error   -> "Failed — tap to retry"
-                        ImportState.Idle       -> "Pick ${selectedFormat.name} file"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = when (importState) {
-                        is ImportState.Error   -> ErrorRed
-                        is ImportState.Success -> SuccessGreen
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
-            }
-            when (importState) {
-                is ImportState.Loading -> CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp), strokeWidth = 2.dp,
-                )
-                is ImportState.Success -> Icon(
-                    Icons.Default.CheckCircle, null,
-                    tint = SuccessGreen, modifier = Modifier.size(20.dp),
-                )
-                is ImportState.Error -> Icon(
-                    Icons.Default.Error, null,
-                    tint = ErrorRed, modifier = Modifier.size(20.dp),
-                )
-                ImportState.Idle -> Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp
-                    else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = expanded && !isLoading,
-            enter   = expandVertically(tween(200)) + fadeIn(tween(200)),
-            exit    = shrinkVertically(tween(180)) + fadeOut(tween(180)),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(vertical = 4.dp),
-            ) {
-                ImportFormat.entries.forEach { format ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onFormatPicked(format.name) }
-                            .padding(horizontal = 54.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            format.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (format == selectedFormat) {
-                            Icon(
-                                Icons.Default.CheckCircle, null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                    }
-                }
-                // CTA button
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 54.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                        .clickable { expanded = false; onLaunchPicker() }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "Choose ${selectedFormat.name} file →",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-        }
-
-        if (!isLast) RowDivider()
-    }
-}
-
-// ─── Shared small composables ─────────────────────────────────────────────────
-
 @Composable
 private fun IconContainer(icon: ImageVector) {
-     val iconTint       = MaterialTheme.colorScheme.secondary
-
+    val iconTint = MaterialTheme.colorScheme.secondary
     Box(
         modifier = Modifier
             .size(36.dp)
@@ -538,8 +569,8 @@ private fun FormatBadge(label: String) {
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            style      = MaterialTheme.typography.labelSmall,
+            color      = MaterialTheme.colorScheme.onPrimaryContainer,
             fontWeight = FontWeight.Bold,
         )
     }

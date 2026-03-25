@@ -8,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,22 +22,32 @@ import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 
 // ─── Durations ────────────────────────────────────────────────────────────────
 
+// Push is slower — new content arriving deserves more time to settle.
+// Pop is snappier — going back should feel instant and responsive.
 private const val PUSH_DURATION = 380
-private const val POP_DURATION  = 300
+private const val POP_DURATION  = 250
 
 // ─── Easing curves (Material 3 "Emphasized") ─────────────────────────────────
 
-private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+// Decelerate: starts fast, eases into rest — used for ENTER transitions.
+// Accelerate: starts slow, picks up speed — used for EXIT transitions.
 private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 
-// ─── Transition presets ───────────────────────────────────────────────────────
+// ─── Horizontal push/pop transitions (peer screens) ──────────────────────────
+
+// ✅ Fixed: fade duration now matches slide duration on all transitions.
+//    Before: fadeIn/fadeOut used DURATION / 2 or DURATION / 3, causing the
+//    content to become fully opaque/transparent before the slide finished.
+//    The second half of the animation was a fully-visible card still moving —
+//    defeating the purpose of the fade entirely.
 
 private val PushEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideIntoContainer(
         towards       = AnimatedContentTransitionScope.SlideDirection.Left,
         animationSpec = tween(PUSH_DURATION, easing = EmphasizedDecelerate),
         initialOffset = { (it * 0.30f).toInt() },
-    ) + fadeIn(tween(PUSH_DURATION / 2, easing = EmphasizedDecelerate))
+    ) + fadeIn(tween(PUSH_DURATION, easing = EmphasizedDecelerate))
 }
 
 private val PushExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
@@ -46,7 +55,7 @@ private val PushExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         towards       = AnimatedContentTransitionScope.SlideDirection.Left,
         animationSpec = tween(PUSH_DURATION, easing = EmphasizedAccelerate),
         targetOffset  = { (it * 0.12f).toInt() },
-    ) + fadeOut(tween(PUSH_DURATION / 3, easing = EmphasizedAccelerate))
+    ) + fadeOut(tween(PUSH_DURATION, easing = EmphasizedAccelerate))
 }
 
 private val PopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
@@ -54,7 +63,7 @@ private val PopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = 
         towards       = AnimatedContentTransitionScope.SlideDirection.Right,
         animationSpec = tween(POP_DURATION, easing = EmphasizedDecelerate),
         initialOffset = { (it * 0.12f).toInt() },
-    ) + fadeIn(tween(POP_DURATION / 2, easing = EmphasizedDecelerate))
+    ) + fadeIn(tween(POP_DURATION, easing = EmphasizedDecelerate))
 }
 
 private val PopExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
@@ -62,15 +71,21 @@ private val PopExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         towards       = AnimatedContentTransitionScope.SlideDirection.Right,
         animationSpec = tween(POP_DURATION, easing = EmphasizedAccelerate),
         targetOffset  = { (it * 0.30f).toInt() },
-    ) + fadeOut(tween(POP_DURATION / 3, easing = EmphasizedAccelerate))
+    ) + fadeOut(tween(POP_DURATION, easing = EmphasizedAccelerate))
 }
+
+// ─── Vertical settings transitions (overlay layer) ───────────────────────────
+
+// Settings slides up like a sheet — signals a different navigation layer,
+// not a peer screen. On dismiss, home re-enters with a subtle downward nudge
+// to match the settings sheet sliding away beneath it.
 
 private val SettingsEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideIntoContainer(
         towards       = AnimatedContentTransitionScope.SlideDirection.Up,
         animationSpec = tween(PUSH_DURATION, easing = EmphasizedDecelerate),
         initialOffset = { (it * 0.25f).toInt() },
-    ) + fadeIn(tween(PUSH_DURATION / 2, easing = EmphasizedDecelerate))
+    ) + fadeIn(tween(PUSH_DURATION, easing = EmphasizedDecelerate))
 }
 
 private val SettingsExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
@@ -78,7 +93,19 @@ private val SettingsExit: AnimatedContentTransitionScope<*>.() -> ExitTransition
         towards       = AnimatedContentTransitionScope.SlideDirection.Down,
         animationSpec = tween(POP_DURATION, easing = EmphasizedAccelerate),
         targetOffset  = { (it * 0.25f).toInt() },
-    ) + fadeOut(tween(POP_DURATION / 2, easing = EmphasizedAccelerate))
+    ) + fadeOut(tween(POP_DURATION, easing = EmphasizedAccelerate))
+}
+
+// ✅ Fixed: was a bare fadeIn with no slide.
+//    Home screen re-entering while settings slides down looked jarring —
+//    home just appeared from nothing. Now it drifts down very slightly (8%)
+//    in sync with the settings sheet dismissal, giving the illusion of depth.
+private val SettingsPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    slideIntoContainer(
+        towards       = AnimatedContentTransitionScope.SlideDirection.Down,
+        animationSpec = tween(POP_DURATION, easing = EmphasizedDecelerate),
+        initialOffset = { (it * 0.08f).toInt() },
+    ) + fadeIn(tween(POP_DURATION, easing = EmphasizedDecelerate))
 }
 
 // ─── Nav Graph ────────────────────────────────────────────────────────────────
@@ -89,44 +116,8 @@ fun AppNavGraph(
     settingsViewModel: SettingsViewModel,
     mainActivity     : MainActivity,
 ) {
+    // ✅ Fixed: removed unused rememberCoroutineScope() allocation.
     val navController = rememberNavController()
-    val scope         = rememberCoroutineScope()
-
-    // ── File picker launcher ──────────────────────────────────────────────────
-    // Hoisted here (outside NavHost) so it is registered against the Activity's
-    // composition — not a NavBackStackEntry's composition. This guarantees the
-    // ActivityResultRegistryOwner is always the Activity itself, which avoids
-    // two bugs:
-    //
-    //   1. "Can only use lower 16 bits for requestCode" — FragmentActivity
-    //      validates request codes when startActivityForResult is called from a
-    //      nested registry. Registering at Activity level bypasses that path.
-    //
-    //   2. Launcher becoming invalid after back-stack changes, because the
-    //      NavBackStackEntry that owned it was destroyed.
-    //
-    // The key= contract: rememberLauncherForActivityResult must NOT be called
-    // conditionally and its registration must survive recomposition — both are
-    // guaranteed here because AppNavGraph is composed exactly once per Activity.
-
-//    var pendingImportFormat by remember { mutableStateOf(ImportFormat.CSV) }
-//
-//
-//    val importFileLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.OpenDocument()
-//    ) { uri ->
-//        if (uri != null) {
-//            scope.launch {
-//                // Use mainActivity context here
-//                settingsViewModel.importFromUri(
-//                    context = mainActivity,
-//                    uri = uri,
-//                    format = pendingImportFormat,
-//                    todoViewModel = viewModel
-//                )
-//            }
-//        }
-//    }
 
     NavHost(
         navController      = navController,
@@ -149,7 +140,7 @@ fun AppNavGraph(
         composable(
             route     = "tasks/{todoId}/{todoColor}/{todoTitle}",
             arguments = listOf(
-                navArgument("todoId")    { type = NavType.IntType },
+                navArgument("todoId")    { type = NavType.IntType    },
                 navArgument("todoColor") { type = NavType.StringType },
                 navArgument("todoTitle") { type = NavType.StringType },
             ),
@@ -168,16 +159,14 @@ fun AppNavGraph(
             route              = "setting",
             enterTransition    = SettingsEnter,
             exitTransition     = SettingsExit,
-            popEnterTransition = { fadeIn(tween(POP_DURATION, easing = EmphasizedDecelerate)) },
+            popEnterTransition = SettingsPopEnter,
             popExitTransition  = SettingsExit,
         ) {
             SettingsScreen(
-                navController = navController,
-                viewModel = settingsViewModel,
-                todoViewModel = viewModel,
-                onRequestImport = { format ->
-                    mainActivity.launchImport(format)  // <-- call Activity function
-                }
+                navController   = navController,
+                viewModel       = settingsViewModel,
+                todoViewModel   = viewModel,
+                onRequestImport = { format -> mainActivity.launchImport(format) },
             )
         }
     }

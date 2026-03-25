@@ -51,4 +51,11 @@ interface ToDoDao {
     @Query("SELECT * FROM tasks WHERE todoId = :todoId")
     fun getTasksForTodoFlow(todoId: Int): Flow<List<Tasks>>
 
+    // that for import functions
+    @Query("SELECT * FROM todos")
+    suspend fun getAllTodos(): List<ToDo>
+
+    @Query("SELECT * FROM tasks WHERE todoId = :todoId")
+    suspend fun getTasksForTodoOnce(todoId: Int): List<Tasks>
+
 }

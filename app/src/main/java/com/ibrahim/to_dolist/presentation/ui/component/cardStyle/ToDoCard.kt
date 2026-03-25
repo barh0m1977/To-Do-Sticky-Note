@@ -54,13 +54,6 @@ private val ColorAnimSpec = tween<Color>(durationMillis = 300)
 
 // ─── Composable ────────────────────────────────────────────────────────────────
 
-/**
- * A modern to-do card with:
- * • Better color contrast: uses alpha 0.08f for softer background, accent color for accent bar
- * • Smooth animations for completion state
- * • Adaptive colors based on completion status
- * • Elegant left accent bar (no washed-out look)
- */
 @Composable
 fun ToDoCard(
     title: String,
@@ -88,23 +81,17 @@ fun ToDoCard(
         label = "containerColor"
     )
 
-    val accentBarColor by animateColorAsState(
-        targetValue = if (isCompleted)
-           accentColor.copy(alpha = 0.8f)
-        else
-            accentColor.copy(alpha = 0.8f),
-        animationSpec = ColorAnimSpec,
-        label = "accentBarColor"
-    )
+    // ✅ Step 2: Both branches were identical — no animation needed, plain val.
+    //    Was: animateColorAsState(if (isCompleted) accentColor.copy(0.8f) else accentColor.copy(0.8f))
+    //    Saved: one State allocation + one animation subscription per card.
+    val accentBarColor = accentColor.copy(alpha = 0.8f)
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = CardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
@@ -114,12 +101,10 @@ fun ToDoCard(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ── Accent bar (vibrant & visible) ──────────────────────────────────
             AccentBar(accentBarColor)
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // ── Task content ───────────────────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -140,7 +125,6 @@ fun ToDoCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // ── Checkbox ───────────────────────────────────────────────────────
             CheckButton(
                 isCompleted = isCompleted,
                 accentColor = accentColor,
@@ -152,10 +136,6 @@ fun ToDoCard(
 
 // ─── Accent Bar Component ──────────────────────────────────────────────────────
 
-/**
- * Left accent bar that shows the task status.
- * Uses full accent color for active tasks, muted for completed.
- */
 @Composable
 private fun AccentBar(color: Color) {
     Box(
@@ -169,10 +149,6 @@ private fun AccentBar(color: Color) {
 
 // ─── Check Button Component ────────────────────────────────────────────────────
 
-/**
- * Circular checkbox with smooth scale animation on check/uncheck.
- * Shows filled state with checkmark when completed.
- */
 @Composable
 private fun CheckButton(
     isCompleted: Boolean,
@@ -196,11 +172,7 @@ private fun CheckButton(
             .size(32.dp)
             .clip(CircleShape)
             .background(backgroundColor)
-            .border(
-                width = 2.dp,
-                color = accentColor,
-                shape = CircleShape
-            )
+            .border(width = 2.dp, color = accentColor, shape = CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -222,9 +194,7 @@ private fun CheckButton(
 private fun ToDoCardPreview() {
     var isCompleted by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier.padding(16.dp)
-    ) {
+    Column(modifier = Modifier.padding(16.dp)) {
         Text(
             "Active Task",
             style = MaterialTheme.typography.labelSmall,
