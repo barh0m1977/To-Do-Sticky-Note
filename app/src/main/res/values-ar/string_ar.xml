@@ -60,5 +60,18 @@
     <string name="add_task">إضافة مهمة</string>
     <string name="clear_all">احذف الكل</string>
     <string name="save">حفظ</string>
+    <string name="search_tasks">ابحث عن مهمة ...</string>
+    <string name="completed">منجز</string>
+    <string name="active_tasks">مهام نشطة</string>
+    <string name="delete_task">حذف المهمة</string>
+    <string name="import_from">استيراد</string>
+    <string name="export">تصدير</string>
+    <string name="version">إصدار</string>
+    <string name="system">نظام</string>
+    <string name="appearance">المظهر</string>
+    <string name="data">البيانات</string>
+    <string name="support">الدعم</string>
+    <string name="about">عن التطبيق</string>
+    <string name="card_style">نمط البطاقة</string>
 
 </resources>

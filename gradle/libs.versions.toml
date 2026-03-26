@@ -1,6 +1,7 @@
 [versions]
 activityComposeVersion = "1.7.0"
 agp = "8.10.1"
+appUpdateKtx = "2.1.0"
 biometric = "1.1.0"
 foundation = "<compose_version>"
 gson = "2.13.2"
@@ -12,6 +13,8 @@ espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
+review = "2.0.2"
+reviewKtx = "2.0.2"
 roomCommonJvm = "2.7.2"
 roomRuntimeAndroid = "2.7.2"
 room = "2.7.2"
@@ -28,6 +31,7 @@ androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "b
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+app-update-ktx = { module = "com.google.android.play:app-update-ktx", version.ref = "appUpdateKtx" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -45,6 +49,8 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
 
+review = { module = "com.google.android.play:review", version.ref = "review" }
+review-ktx = { module = "com.google.android.play:review-ktx", version.ref = "reviewKtx" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }

@@ -8,12 +8,16 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ibrahim.to_dolist.MainActivity
+import com.ibrahim.to_dolist.onboarding.OnboardingScreen
+import com.ibrahim.to_dolist.onboarding.OnboardingViewModel
 import com.ibrahim.to_dolist.presentation.ui.screens.HomeScreen
 import com.ibrahim.to_dolist.presentation.ui.screens.TaskListScreen
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsScreen
@@ -22,25 +26,15 @@ import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 
 // ─── Durations ────────────────────────────────────────────────────────────────
 
-// Push is slower — new content arriving deserves more time to settle.
-// Pop is snappier — going back should feel instant and responsive.
 private const val PUSH_DURATION = 380
 private const val POP_DURATION  = 250
 
 // ─── Easing curves (Material 3 "Emphasized") ─────────────────────────────────
 
-// Decelerate: starts fast, eases into rest — used for ENTER transitions.
-// Accelerate: starts slow, picks up speed — used for EXIT transitions.
 private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
 private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 
-// ─── Horizontal push/pop transitions (peer screens) ──────────────────────────
-
-// ✅ Fixed: fade duration now matches slide duration on all transitions.
-//    Before: fadeIn/fadeOut used DURATION / 2 or DURATION / 3, causing the
-//    content to become fully opaque/transparent before the slide finished.
-//    The second half of the animation was a fully-visible card still moving —
-//    defeating the purpose of the fade entirely.
+// ─── Horizontal push/pop transitions ─────────────────────────────────────────
 
 private val PushEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideIntoContainer(
@@ -74,11 +68,7 @@ private val PopExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
     ) + fadeOut(tween(POP_DURATION, easing = EmphasizedAccelerate))
 }
 
-// ─── Vertical settings transitions (overlay layer) ───────────────────────────
-
-// Settings slides up like a sheet — signals a different navigation layer,
-// not a peer screen. On dismiss, home re-enters with a subtle downward nudge
-// to match the settings sheet sliding away beneath it.
+// ─── Vertical settings transitions ───────────────────────────────────────────
 
 private val SettingsEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideIntoContainer(
@@ -96,10 +86,6 @@ private val SettingsExit: AnimatedContentTransitionScope<*>.() -> ExitTransition
     ) + fadeOut(tween(POP_DURATION, easing = EmphasizedAccelerate))
 }
 
-// ✅ Fixed: was a bare fadeIn with no slide.
-//    Home screen re-entering while settings slides down looked jarring —
-//    home just appeared from nothing. Now it drifts down very slightly (8%)
-//    in sync with the settings sheet dismissal, giving the illusion of depth.
 private val SettingsPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideIntoContainer(
         towards       = AnimatedContentTransitionScope.SlideDirection.Down,
@@ -108,25 +94,61 @@ private val SettingsPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTrans
     ) + fadeIn(tween(POP_DURATION, easing = EmphasizedDecelerate))
 }
 
+// ─── Onboarding fade transition ───────────────────────────────────────────────
+
+private val OnboardingExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    fadeOut(tween(400))
+}
+
+private val OnboardingPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    fadeIn(tween(400))
+}
+
 // ─── Nav Graph ────────────────────────────────────────────────────────────────
 
 @Composable
 fun AppNavGraph(
-    viewModel        : ToDoViewModel,
-    settingsViewModel: SettingsViewModel,
-    mainActivity     : MainActivity,
+    viewModel           : ToDoViewModel,
+    settingsViewModel   : SettingsViewModel,
+    onboardingViewModel : OnboardingViewModel,
+    mainActivity        : MainActivity,
 ) {
-    // ✅ Fixed: removed unused rememberCoroutineScope() allocation.
-    val navController = rememberNavController()
+    val isOnboardingCompleted by onboardingViewModel.isOnboardingCompleted.collectAsState(initial = null)
+
+    // Wait until value is loaded
+    if (isOnboardingCompleted == null) return
+
+    val navController           = rememberNavController()
+    val startDestination = if (isOnboardingCompleted == true) "home" else "onboarding"
+
+
 
     NavHost(
         navController      = navController,
-        startDestination   = "home",
+        startDestination   = startDestination,
         enterTransition    = PushEnter,
         exitTransition     = PushExit,
         popEnterTransition = PopEnter,
         popExitTransition  = PopExit,
     ) {
+
+        // ── Onboarding ────────────────────────────────────────────────────────
+        composable(
+            route           = "onboarding",
+            exitTransition  = OnboardingExit,
+            popEnterTransition = OnboardingPopEnter,
+        ) {
+            OnboardingScreen(
+                onFinished = {
+                    onboardingViewModel.completeOnboarding()
+                    navController.navigate("home") {
+                        // Clear onboarding from back stack so Back doesn't return to it
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                },
+            )
+        }
+
         // ── Home ──────────────────────────────────────────────────────────────
         composable("home") {
             HomeScreen(

@@ -1,10 +1,10 @@
 package com.ibrahim.to_dolist.presentation.ui.screens.todolist
 
-import CardStickyNote
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,21 +36,32 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.ibrahim.to_dolist.MainActivity
+import com.ibrahim.to_dolist.core.utility.CardStylePreference
 import com.ibrahim.to_dolist.data.model.ToDo
+import com.ibrahim.to_dolist.presentation.ui.component.CardStickyNote
 import com.ibrahim.to_dolist.presentation.ui.component.TaskSheet
+import com.ibrahim.to_dolist.presentation.util.CardStyle
 import com.ibrahim.to_dolist.presentation.util.TaskSheetType
 import com.ibrahim.to_dolist.util.BiometricHelper
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: MainActivity ,navController: NavController) {
+fun ToDoListScreen(
+    viewModel: ToDoViewModel,
+    modifier: Modifier,
+    mainActivity: MainActivity,
+    navController: NavController
+) {
     val todos by viewModel.todos.collectAsState()
     val selectedToDo by viewModel.selectedToDo.collectAsState()
     val gridState = rememberLazyGridState()
     val context = LocalContext.current
 
     val executor = ContextCompat.getMainExecutor(context)
+
+    val cardStyle by CardStylePreference.observe(context)
+        .collectAsState(initial = CardStyle.OUTLINED)
 
     var showConfirmDialog by remember { mutableStateOf(false) }
     var targetToDo by remember { mutableStateOf<ToDo?>(null) }
@@ -87,18 +98,27 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
                         else -> {}
                     }
                 }
+
                 is ToDoAction.OpenTodo -> {
                     viewModel.openAfterBiometric(action.todo)
                 }
+
                 is ToDoAction.RequestBiometric -> {
 
                     BiometricHelper(
                         context = mainActivity,
                         onSuccess = {
-                            when(action.afterSuccess){
+                            when (action.afterSuccess) {
                                 ActionType.OPEN -> viewModel.openAfterBiometric(action.todo)
-                                ActionType.DELETE -> viewModel.onConfirmationAgreed(action.todo, ActionType.DELETE)
-                                ActionType.EDIT -> viewModel.onConfirmationAgreed(action.todo, ActionType.EDIT)
+                                ActionType.DELETE -> viewModel.onConfirmationAgreed(
+                                    action.todo,
+                                    ActionType.DELETE
+                                )
+
+                                ActionType.EDIT -> viewModel.onConfirmationAgreed(
+                                    action.todo,
+                                    ActionType.EDIT
+                                )
                             }
                         },
                         onError = { Toast.makeText(mainActivity, it, Toast.LENGTH_SHORT).show() }
@@ -124,7 +144,8 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
             .fillMaxSize()
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 60.dp)
     ) {
         items(todos, key = { it.id }) { todo ->
             CardStickyNote(
@@ -139,6 +160,7 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
                 text = todo.title,
                 colorArray = todo.cardColor,
                 state = todo.state,
+                cardStyle = cardStyle,
                 isLocked = todo.locked,
                 onClick = { viewModel.onTodoClicked(todo) },
                 onDeleteConfirmed = { viewModel.requestDelete(todo) },
@@ -147,8 +169,6 @@ fun ToDoListScreen(viewModel: ToDoViewModel, modifier: Modifier, mainActivity: M
 
         }
     }
-
-
 
 
     // Delete Dialog

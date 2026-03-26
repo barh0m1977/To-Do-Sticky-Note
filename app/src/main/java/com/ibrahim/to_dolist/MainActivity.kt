@@ -17,10 +17,15 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import com.ibrahim.to_dolist.core.utility.AppUpdateChecker
 import com.ibrahim.to_dolist.core.utility.LocaleHelper
+import com.ibrahim.to_dolist.data.onboarding.OnboardingManager
 import com.ibrahim.to_dolist.data.settings.SettingsManager
 import com.ibrahim.to_dolist.data.settings.SettingsRepository
 import com.ibrahim.to_dolist.navigation.AppNavGraph
+import com.ibrahim.to_dolist.onboarding.OnboardingViewModel
+import com.ibrahim.to_dolist.onboarding.OnboardingViewModelFactory
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.AppLanguage
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.ExportState
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.ImportFormat
@@ -28,12 +33,19 @@ import com.ibrahim.to_dolist.presentation.ui.screens.settings.ImportState
 import com.ibrahim.to_dolist.presentation.ui.screens.settings.SettingsViewModel
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
 import com.ibrahim.to_dolist.ui.theme.ToDoListTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
 
     private val viewModel: ToDoViewModel by viewModels()
+
     private val settingsViewModel: SettingsViewModel by viewModels {
         SettingsViewModelFactory(SettingsManager(this))
+    }
+
+    // ── Onboarding ────────────────────────────────────────────────────────────
+    private val onboardingViewModel: OnboardingViewModel by viewModels {
+        OnboardingViewModelFactory(OnboardingManager(this))
     }
 
     private val IMPORT_REQUEST_CODE = 1234
@@ -62,9 +74,15 @@ class MainActivity : FragmentActivity() {
                     context = this,
                     uri     = uri,
                     format  = currentImportFormat,
-                    // updateExisting = true  ← uncomment to enable overwrite mode
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            AppUpdateChecker.checkAndUpdate(this@MainActivity)
         }
     }
 
@@ -106,19 +124,11 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(importState) {
                 when (val state = importState) {
                     is ImportState.Success -> {
-                        Toast.makeText(
-                            this@MainActivity,
-                            state.result.toMessage(),
-                            Toast.LENGTH_LONG,
-                        ).show()
+                        Toast.makeText(this@MainActivity, state.result.toMessage(), Toast.LENGTH_LONG).show()
                         settingsViewModel.clearImportState()
                     }
                     is ImportState.Error -> {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Import failed: ${state.message}",
-                            Toast.LENGTH_LONG,
-                        ).show()
+                        Toast.makeText(this@MainActivity, "Import failed: ${state.message}", Toast.LENGTH_LONG).show()
                         settingsViewModel.clearImportState()
                     }
                     is ImportState.Loading, ImportState.Idle -> Unit
@@ -129,7 +139,6 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(exportState) {
                 when (val state = exportState) {
                     is ExportState.Success -> {
-                        // Share the exported file via a system sheet
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "application/octet-stream"
                             putExtra(Intent.EXTRA_STREAM, android.net.Uri.fromFile(state.file))
@@ -139,11 +148,7 @@ class MainActivity : FragmentActivity() {
                         settingsViewModel.clearExportState()
                     }
                     is ExportState.Error -> {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Export failed: ${state.message}",
-                            Toast.LENGTH_LONG,
-                        ).show()
+                        Toast.makeText(this@MainActivity, "Export failed: ${state.message}", Toast.LENGTH_LONG).show()
                         settingsViewModel.clearExportState()
                     }
                     is ExportState.Loading, ExportState.Idle -> Unit
@@ -156,9 +161,10 @@ class MainActivity : FragmentActivity() {
             ) {
                 ToDoListTheme(theme.name) {
                     AppNavGraph(
-                        viewModel         = viewModel,
-                        settingsViewModel = settingsViewModel,
-                        mainActivity      = this@MainActivity,
+                        viewModel           = viewModel,
+                        settingsViewModel   = settingsViewModel,
+                        onboardingViewModel = onboardingViewModel,
+                        mainActivity        = this@MainActivity,
                     )
                 }
             }

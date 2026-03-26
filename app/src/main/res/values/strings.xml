@@ -69,5 +69,10 @@
     <string name="search_tasks">Search tasks...</string>
     <string name="completed">COMPLETED</string>
     <string name="active_tasks">ACTIVE TASKS</string>
+    <string name="appearance">Appearance</string>
+    <string name="data">Data</string>
+    <string name="support">Support</string>
+    <string name="about">About</string>
+    <string name="card_style">Card Style</string>
 
 </resources>

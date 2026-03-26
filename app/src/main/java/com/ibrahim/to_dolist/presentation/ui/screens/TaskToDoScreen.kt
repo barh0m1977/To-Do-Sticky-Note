@@ -1,10 +1,12 @@
 package com.ibrahim.to_dolist.presentation.ui.screens
 
+import android.app.Activity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
@@ -57,6 +59,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +79,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -89,10 +93,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ibrahim.to_dolist.R
 import com.ibrahim.to_dolist.animation.AnimatedPlaceholder
+import com.ibrahim.to_dolist.core.utility.AppReviewManager
+import com.ibrahim.to_dolist.core.utility.ReviewPreferences
 import com.ibrahim.to_dolist.data.model.Tasks
 import com.ibrahim.to_dolist.data.model.ToDoStickyColors
 import com.ibrahim.to_dolist.presentation.ui.component.cardStyle.ToDoCard
 import com.ibrahim.to_dolist.presentation.ui.screens.todolist.ToDoViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -119,7 +126,10 @@ fun TaskListScreen(
 ) {
     val tasks by viewModel.getTasksFlow(todoId).collectAsStateWithLifecycle(emptyList())
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current          // ← add this
+    val activity = context as? Activity        // ← add this
 
+    var showRateSheet by remember { mutableStateOf(false) }
     val accentColor = remember(cardColor) {
         ToDoStickyColors.valueOf(cardColor).listColor[1]
     }
@@ -178,7 +188,12 @@ fun TaskListScreen(
             onDeleteTask = { taskToDelete = it },
             onEditTask = { editingTask = it },
             onClearAll = { showClearAllDialog = true },
-            onCompleteTask = { task -> viewModel.updateTask(task.copy(isChecked = true)) },
+            onCompleteTask = { task ->
+                viewModel.updateTask(task.copy(isChecked = true))
+                if (ReviewPreferences.onTaskCompleted(context)) {
+                    showRateSheet = true
+                }
+            },
             onUncompleteTask = { task -> viewModel.updateTask(task.copy(isChecked = false)) },
         )
     }
@@ -193,6 +208,16 @@ fun TaskListScreen(
                 scope.launch { addSheetState.hide() }.invokeOnCompletion { showAddSheet = false }
             },
         )
+    }
+    if (showRateSheet) {
+        LaunchedEffect(Unit) {
+            val act = activity
+            if (act != null) {
+                AppReviewManager.launchReviewFlow(act)
+                ReviewPreferences.markReviewShown(context)
+            }
+            showRateSheet = false
+        }
     }
 
     taskToDelete?.let { task ->
@@ -271,19 +296,6 @@ private fun TaskListContent(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // ✅ Step 3: Removed AnimatedVisibility(visible = true) wrappers.
-        //    visible=true means exit never fires — items were deleted from the list
-        //    before visible could flip to false, so the exit animation was dead code.
-        //    animateItem() on the direct LazyColumn child is the correct replacement:
-        //    it hooks into LazyColumn's own placement animation system for both
-        //    enter and exit transitions.
-        //
-        // ✅ Step 4: Stable lambdas via remember(task.id).
-        //    Inline lambdas { onDeleteTask(task) } create a new instance on every
-        //    parent recomposition. Compose can't skip the equality check → every
-        //    card re-runs even if its own data didn't change.
-        //    remember(task.id) { { ... } } gives a stable reference that only
-        //    changes when the task itself changes.
         items(items = activeTasks, key = { it.id }) { task ->
             val onDelete = remember(task.id) { { onDeleteTask(task) } }
             val onEdit = remember(task.id) { { onEditTask(task) } }
@@ -312,7 +324,11 @@ private fun TaskListContent(
                 trailingAction = {
                     if (completedTasks.isNotEmpty()) {
                         TextButton(onClick = { onClearAll() }) {
-                            Text(stringResource(R.string.clear_all), color = DarkGray, fontSize = 12.sp)
+                            Text(
+                                stringResource(R.string.clear_all),
+                                color = DarkGray,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 },
@@ -381,12 +397,7 @@ private fun SwipeableTaskCard(
         }
     }
 
-    // ✅ Step 1 (fix 1): derivedStateOf for boolean values that flip rarely.
-    //    Before: reading offsetX.value directly in composition caused SwipeableTaskCard
-    //    to recompose on *every drag pixel* (every Animatable frame notification).
-    //    derivedStateOf { } reads offsetX.value inside a snapshot observer — Compose
-    //    only schedules a recomposition when the *result* of the lambda changes
-    //    (i.e. the boolean flips), not on every frame.
+
     val showBackground by remember { derivedStateOf { abs(offsetX.value) > 2f } }
     val isSwipingRight by remember { derivedStateOf { offsetX.value > 0f } }
 
@@ -403,12 +414,7 @@ private fun SwipeableTaskCard(
             .clip(RoundedCornerShape(16.dp))
     ) {
         if (showBackground) {
-            // ✅ Step 1 (fix 2): color lerp moved into drawBehind (draw phase).
-            //    Before: deleteColor/editColor were computed in composition from
-            //    offsetX.value, which triggered a full recompose every drag frame.
-            //    drawBehind { } runs in the draw phase — offsetX.value is read there,
-            //    so Compose only re-draws this layer each frame, never recomposes the
-            //    composable tree. Zero allocations during drag.
+
             SwipeBackground(
                 modifier = Modifier.drawBehind {
                     val raw = offsetX.value
@@ -454,10 +460,6 @@ private fun SwipeableTaskCard(
 
 // ─── SwipeBackground ─────────────────────────────────────────────────────────
 
-// ✅ Step 1 (fix 3): Removed `color` and `fraction` params.
-//    Color is now drawn via the modifier passed in from the caller (drawBehind),
-//    so SwipeBackground owns only the icon overlay — not the color computation.
-//    This makes the signature honest: SwipeBackground is purely structural content.
 @Composable
 private fun SwipeBackground(
     modifier: Modifier = Modifier,
@@ -862,6 +864,86 @@ private fun EditTaskBottomSheet(
                     Text(stringResource(R.string.save), color = Color.White)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun SwipePreviewCard(
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val thresholdPx = with(density) { 80.dp.toPx() }
+
+    val offsetX = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+
+            // swipe right (delete)
+            offsetX.animateTo(
+                thresholdPx,
+                animationSpec = tween(900)
+            )
+
+            delay(600)
+
+            offsetX.animateTo(
+                0f,
+                animationSpec = tween(600)
+            )
+
+            delay(400)
+
+            // swipe left (edit)
+            offsetX.animateTo(
+                -thresholdPx,
+                animationSpec = tween(900)
+            )
+
+            delay(600)
+
+            offsetX.animateTo(
+                0f,
+                animationSpec = tween(600)
+            )
+
+            delay(1000)
+        }
+    }
+
+    val isRight = offsetX.value > 0
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .clip(RoundedCornerShape(16.dp))
+    ) {
+
+        SwipeBackground(
+            icon = if (isRight) Icons.Default.Delete else Icons.Default.Edit,
+            label = if (isRight) "Delete" else "Edit",
+            iconColor = Color.White,
+            iconScale = 1.1f,
+            alignment = if (isRight) Alignment.CenterStart else Alignment.CenterEnd,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(accentColor)
+        )
+
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+        ) {
+            ToDoCard(
+                title = "Buy groceries",
+                subtitle = "",
+                accentColor = accentColor,
+                isCompleted = false,
+                onCheckedChange = {}
+            )
         }
     }
 }

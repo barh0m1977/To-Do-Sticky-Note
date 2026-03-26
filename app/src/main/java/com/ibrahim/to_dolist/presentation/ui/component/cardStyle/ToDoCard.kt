@@ -81,9 +81,7 @@ fun ToDoCard(
         label = "containerColor"
     )
 
-    // ✅ Step 2: Both branches were identical — no animation needed, plain val.
-    //    Was: animateColorAsState(if (isCompleted) accentColor.copy(0.8f) else accentColor.copy(0.8f))
-    //    Saved: one State allocation + one animation subscription per card.
+
     val accentBarColor = accentColor.copy(alpha = 0.8f)
 
     Card(

@@ -1,8 +1,3 @@
-import org.gradle.kotlin.dsl.android
-import org.gradle.kotlin.dsl.kapt
-import org.gradle.kotlin.dsl.kotlinOptions
-import org.gradle.kotlin.dsl.libs
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -86,6 +81,10 @@ dependencies {
 
     //json creation
     implementation(libs.gson)
+    //google play service
+    implementation(libs.review)
+    implementation(libs.review.ktx)
+    implementation(libs.app.update.ktx)
 
 
 
